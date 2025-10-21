@@ -58,7 +58,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ label, options, value, onCh
                     </svg>
                 </button>
                 {isOpen && (
-                    <div className="absolute z-20 w-full mt-1 bg-black/40 backdrop-blur-xl rounded-lg shadow-lg border border-white/10 max-h-60 overflow-auto animate-fade-in-down">
+                    <div className="absolute z-20 w-full mt-1 bg-zinc-900/95 backdrop-blur-lg rounded-lg shadow-lg border border-white/10 max-h-60 overflow-auto animate-fade-in-down">
                         <ul className="py-1">
                             {options.map(option => (
                                 <li key={option.value}>

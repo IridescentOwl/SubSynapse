@@ -91,6 +91,8 @@ const ManageSubscriptionModal: React.FC<ManageSubscriptionModalProps> = ({ isOpe
                             filled={(hoverRating || rating) > i}
                             onClick={() => setRating(i + 1)}
                             onMouseEnter={() => setHoverRating(i + 1)}
+                            // FIX: Added the required 'onMouseLeave' prop to handle resetting the hover state.
+                            onMouseLeave={() => setHoverRating(0)}
                         />
                     ))}
                     </div>

@@ -18,13 +18,13 @@ const SubscriptionDonutChart: React.FC<{ subscriptions: MySubscription[] }> = ({
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
     
   const data: ChartData[] = React.useMemo(() => {
-    // FIX: The `reduce` method's return type is inferred from its initial value (`{}`).
-    // By providing a generic type argument, we ensure `categoryTotals` is correctly
+    // FIX: The `reduce` method's return type is inferred from its initial value.
+    // By casting the initial value, we ensure `categoryTotals` is correctly
     // typed as `Record<string, number>`, fixing downstream type errors.
-    const categoryTotals = subscriptions.reduce<Record<string, number>>((acc, sub) => {
+    const categoryTotals = subscriptions.reduce((acc, sub) => {
       acc[sub.category] = (acc[sub.category] || 0) + sub.myShare;
       return acc;
-    }, {});
+    }, {} as Record<string, number>);
 
     const mappedData = Object.entries(categoryTotals)
       .map(([category, value]) => ({
@@ -44,7 +44,9 @@ const SubscriptionDonutChart: React.FC<{ subscriptions: MySubscription[] }> = ({
   const radius = 80;
   const circumference = 2 * Math.PI * radius;
 
-  const segmentsData = data.reduce<Array<ChartData & { percentage: number; accumulatedPercentage: number; }>>((acc, item) => {
+  // FIX: Cast the initial value of reduce to correctly type the accumulator `acc`.
+  // This resolves type errors in calculating `prevAccumulated` and `accumulatedPercentage`.
+  const segmentsData = data.reduce((acc, item) => {
     const percentage = (item.value / totalValue) * 100;
     const prevAccumulated = acc.length > 0 ? acc[acc.length - 1].accumulatedPercentage : 0;
     acc.push({
@@ -53,7 +55,7 @@ const SubscriptionDonutChart: React.FC<{ subscriptions: MySubscription[] }> = ({
         accumulatedPercentage: prevAccumulated + percentage,
     });
     return acc;
-  }, []);
+  }, [] as Array<ChartData & { percentage: number; accumulatedPercentage: number; }>);
 
   return (
     <div className="flex flex-col md:flex-row items-center justify-center w-full h-full gap-8">

@@ -1,37 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SubSynapse: Subscription Sharing</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://aistudiocdn.com/react@^19.2.0",
-        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-        "react/": "https://aistudiocdn.com/react@^19.2.0/",
-        "clsx": "https://aistudiocdn.com/clsx@^2.1.1",
-        "tailwind-merge": "https://aistudiocdn.com/tailwind-merge@^3.3.1"
-      }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SubSynapse: Subscription Sharing</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://aistudiocdn.com/react@^19.2.0",
+      "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+      "react/": "https://aistudiocdn.com/react@^19.2.0/",
+      "clsx": "https://aistudiocdn.com/clsx@^2.1.1",
+      "tailwind-merge": "https://aistudiocdn.com/tailwind-merge@^3.3.1"
     }
-    </script>
-    <script type="module" src="./index.tsx"></script>
-    <style>
-      @keyframes aurora {
-        from {
-          background-position: 50% 50%, 50% 50%;
-        }
-        to {
-          background-position: 350% 50%, 350% 50%;
-        }
-      }
-      body {
-        /* The solid background was removed from here to allow the Aurora to be visible */
-      }
-    </style>
+  }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      color: #e2e8f0; /* slate-200 */
+      overflow-x: hidden;
+    }
+    .text-shadow {
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+    @keyframes aurora {
+      from { background-position: 50% 50%, 50% 50%; }
+      to { background-position: 350% 50%, 350% 50%; }
+    }
+  </style>
 </head>
 <body>
-    <div id="root"></div>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
 </body>
 </html>

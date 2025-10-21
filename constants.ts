@@ -10,6 +10,7 @@ export const SUBSCRIPTION_GROUPS: SubscriptionGroup[] = [
     slotsFilled: 2,
     tags: ['4K', 'UHD', 'Movies', 'Series'],
     category: 'Video',
+    postedBy: { name: 'Alex T.', rating: 4.9 },
   },
   {
     id: '2',
@@ -20,6 +21,7 @@ export const SUBSCRIPTION_GROUPS: SubscriptionGroup[] = [
     slotsFilled: 5,
     tags: ['Music', 'Ad-free', 'Podcast'],
     category: 'Music',
+    postedBy: { name: 'Maria S.', rating: 4.8 },
   },
   {
     id: '3',
@@ -30,6 +32,7 @@ export const SUBSCRIPTION_GROUPS: SubscriptionGroup[] = [
     slotsFilled: 1,
     tags: ['Ad-free', 'Music', 'Background Play'],
     category: 'Video',
+    postedBy: { name: 'David L.', rating: 4.7 },
   },
   {
     id: '4',
@@ -40,6 +43,7 @@ export const SUBSCRIPTION_GROUPS: SubscriptionGroup[] = [
     slotsFilled: 3,
     tags: ['Marvel', 'Star Wars', 'Pixar'],
     category: 'Video',
+    postedBy: { name: 'Sophia C.', rating: 5.0 },
   },
   {
     id: '5',
@@ -50,6 +54,7 @@ export const SUBSCRIPTION_GROUPS: SubscriptionGroup[] = [
     slotsFilled: 3,
     tags: ['Movies', 'Series', 'Originals'],
     category: 'Video',
+    postedBy: { name: 'Chris P.', rating: 4.6 },
   },
   {
     id: '6',
@@ -60,6 +65,7 @@ export const SUBSCRIPTION_GROUPS: SubscriptionGroup[] = [
     slotsFilled: 4,
     tags: ['Office', 'Productivity', 'Cloud'],
     category: 'Productivity',
+    postedBy: { name: 'Emily R.', rating: 4.9 },
   },
    {
     id: '7',
@@ -70,6 +76,7 @@ export const SUBSCRIPTION_GROUPS: SubscriptionGroup[] = [
     slotsFilled: 1,
     tags: ['Design', 'Photo', 'Video'],
     category: 'Design',
+    postedBy: { name: 'Jordan B.', rating: 4.8 },
   },
   {
     id: '8',
@@ -80,6 +87,7 @@ export const SUBSCRIPTION_GROUPS: SubscriptionGroup[] = [
     slotsFilled: 2,
     tags: ['Design', 'Templates', 'Social Media'],
     category: 'Design',
+    postedBy: { name: 'Olivia M.', rating: 5.0 },
   }
 ];
 

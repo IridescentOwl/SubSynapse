@@ -1,39 +1,73 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import SubscriptionCard from './components/SubscriptionCard';
 import GlassmorphicCard from './components/GlassmorphicCard';
 import { SUBSCRIPTION_GROUPS, MY_SUBSCRIPTIONS } from './constants';
-import type { SubscriptionGroup } from './types';
+import type { SubscriptionGroup, MySubscription } from './types';
 import MyDetailedSubscriptionCard from './components/MyDetailedSubscriptionCard';
 import type { DashboardTab } from './App';
 import SubscriptionDonutChart from './components/SubscriptionDonutChart';
+import CustomSelect from './components/CustomSelect';
+
+const useCountUp = (end: number, duration: number = 1500) => {
+  const [count, setCount] = useState(0);
+  const frameRate = 1000 / 60;
+  const totalFrames = Math.round(duration / frameRate);
+
+  useEffect(() => {
+    let frame = 0;
+    const counter = setInterval(() => {
+      frame++;
+      const progress = frame / totalFrames;
+      const easedProgress = 1 - Math.pow(1 - progress, 5);
+      setCount(Math.round(end * easedProgress));
+
+      if (frame === totalFrames) {
+        clearInterval(counter);
+        setCount(end);
+      }
+    }, frameRate);
+
+    return () => clearInterval(counter);
+  }, [end, duration]);
+
+  return count;
+};
 
 interface DashboardPageProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   activeTab: DashboardTab;
   setActiveTab: (tab: DashboardTab) => void;
+  onManageSubscription: (subscription: MySubscription) => void;
 }
 
-const StatCard: React.FC<{ title: string; value: string; className?: string }> = ({ title, value, className }) => (
-    <GlassmorphicCard className="p-6 text-center">
-        <p className="text-slate-300 mb-2">{title}</p>
-        <p className={`text-4xl font-bold ${className}`}>{value}</p>
-    </GlassmorphicCard>
-);
+const StatCard: React.FC<{ title: string; value: string; className?: string }> = ({ title, value, className }) => {
+    const numericValue = useMemo(() => parseFloat(value.replace(/[^0-9.-]+/g, "")), [value]);
+    const animatedValue = useCountUp(isNaN(numericValue) ? 0 : numericValue);
+    const prefix = useMemo(() => value.match(/^[^0-9]*/)?.[0] || '', [value]);
+    const formattedValue = isNaN(numericValue) ? value : `${prefix}${Math.round(animatedValue)}`;
+
+    return (
+        <GlassmorphicCard className="p-6 text-center" hasAnimation>
+            <p className="text-slate-300 mb-2">{title}</p>
+            <p className={`text-4xl font-bold text-shadow ${className}`}>{formattedValue}</p>
+        </GlassmorphicCard>
+    );
+};
 
 const ALL_CATEGORIES = 'All Categories';
 const categories = [ALL_CATEGORIES, ...Array.from(new Set(SUBSCRIPTION_GROUPS.map(g => g.category)))];
+const categoryOptions = categories.map(c => ({ value: c, label: c }));
 
 type SortOption = 'default' | 'price' | 'slots';
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ searchTerm, setSearchTerm, activeTab, setActiveTab }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ searchTerm, setSearchTerm, activeTab, setActiveTab, onManageSubscription }) => {
   const [filterCategory, setFilterCategory] = useState(ALL_CATEGORIES);
   const [sortBy, setSortBy] = useState<SortOption>('default');
 
   const filteredSubscriptions = useMemo(() => {
-    let groups: SubscriptionGroup[] = [...SUBSCRIPTION_GROUPS]; // Create a copy to prevent mutation
+    let groups: SubscriptionGroup[] = [...SUBSCRIPTION_GROUPS];
 
-    // Filter by search term
     if (searchTerm) {
       groups = groups.filter(group =>
         group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -41,12 +75,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ searchTerm, setSearchTerm
       );
     }
     
-    // Filter by category
     if (filterCategory !== ALL_CATEGORIES) {
         groups = groups.filter(group => group.category === filterCategory);
     }
     
-    // Sort
     if (sortBy === 'price') {
       return groups.sort((a, b) => (a.totalPrice / a.slotsTotal) - (b.totalPrice / b.slotsTotal));
     } else if (sortBy === 'slots') {
@@ -68,7 +100,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ searchTerm, setSearchTerm
         <div>
             <h1 className="text-3xl md:text-4xl font-bold mb-8 text-shadow text-center pt-8">Explore More Groups</h1>
             
-            {/* Search and Filter Controls */}
             <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
                 <div className="relative md:col-span-2">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -76,30 +107,35 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ searchTerm, setSearchTerm
                   </div>
                   <input type="text" placeholder="Search for Netflix, Spotify..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white/10 rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 text-white placeholder-gray-400 transition" />
                 </div>
-                <div className="relative">
-                    <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="w-full appearance-none px-4 py-3 bg-white/10 rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 text-white transition">
-                        {categories.map(c => <option key={c} value={c} className="bg-slate-800">{c}</option>)}
-                    </select>
-                </div>
+                <CustomSelect
+                  options={categoryOptions}
+                  value={filterCategory}
+                  onChange={setFilterCategory}
+                  triggerClassName="rounded-full py-3"
+                  label=""
+                />
             </div>
             <div className="flex justify-center items-center gap-4 mb-8 text-sm text-slate-300">
                 <span>Sort by:</span>
-                <button onClick={() => setSortBy('default')} className={`px-3 py-1 rounded-full ${sortBy === 'default' ? 'bg-sky-500/50 text-white' : 'hover:bg-white/10'}`}>Default</button>
-                <button onClick={() => setSortBy('price')} className={`px-3 py-1 rounded-full ${sortBy === 'price' ? 'bg-sky-500/50 text-white' : 'hover:bg-white/10'}`}>Price</button>
-                <button onClick={() => setSortBy('slots')} className={`px-3 py-1 rounded-full ${sortBy === 'slots' ? 'bg-sky-500/50 text-white' : 'hover:bg-white/10'}`}>Slots Available</button>
+                <button onClick={() => setSortBy('default')} className={`px-3 py-1 rounded-full transition active:scale-95 ${sortBy === 'default' ? 'bg-sky-500/50 text-white' : 'hover:bg-white/10'}`}>Default</button>
+                <button onClick={() => setSortBy('price')} className={`px-3 py-1 rounded-full transition active:scale-95 ${sortBy === 'price' ? 'bg-sky-500/50 text-white' : 'hover:bg-white/10'}`}>Price</button>
+                <button onClick={() => setSortBy('slots')} className={`px-3 py-1 rounded-full transition active:scale-95 ${sortBy === 'slots' ? 'bg-sky-500/50 text-white' : 'hover:bg-white/10'}`}>Slots Available</button>
             </div>
 
 
             {filteredSubscriptions.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 group pointer-events-none">
-                    {filteredSubscriptions.map((group: SubscriptionGroup) => (
-                        <SubscriptionCard key={group.id} group={group} />
+                    {filteredSubscriptions.map((group, index) => (
+                        <SubscriptionCard key={group.id} group={group} animationDelay={index * 100} />
                     ))}
                 </div>
             ) : (
-                <GlassmorphicCard className="text-center py-16">
+                <GlassmorphicCard className="text-center py-16 flex flex-col items-center justify-center" hasAnimation>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-slate-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
                     <p className="text-2xl font-semibold text-slate-300">No groups found.</p>
-                    <p className="text-slate-400 mt-2">Try adjusting your filters.</p>
+                    <p className="text-slate-400 mt-2">Try adjusting your filters or create your own group!</p>
                 </GlassmorphicCard>
             )}
         </div>
@@ -114,15 +150,20 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ searchTerm, setSearchTerm
                       <StatCard title="Next Bill Total" value={`₹${nextBillTotal.toFixed(0)}`} className="text-sky-300" />
                       <StatCard title="Active Subscriptions" value={MY_SUBSCRIPTIONS.length.toString()} className="text-purple-400 md:col-span-2" />
                   </div>
-                  <GlassmorphicCard className="p-6 flex items-center justify-center min-h-[200px]">
+                  <GlassmorphicCard className="p-6 flex items-center justify-center min-h-[200px]" hasAnimation animationDelay={150}>
                       <SubscriptionDonutChart subscriptions={MY_SUBSCRIPTIONS} />
                   </GlassmorphicCard>
               </div>
 
               <h2 className="text-2xl font-bold mb-6">Manage Your Subscriptions</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 group pointer-events-none">
-                  {MY_SUBSCRIPTIONS.map(sub => (
-                      <MyDetailedSubscriptionCard key={sub.id} sub={sub} />
+                  {MY_SUBSCRIPTIONS.map((sub, index) => (
+                      <MyDetailedSubscriptionCard 
+                        key={sub.id} 
+                        sub={sub} 
+                        animationDelay={index * 100}
+                        onManageClick={() => onManageSubscription(sub)}
+                      />
                   ))}
               </div>
           </div>

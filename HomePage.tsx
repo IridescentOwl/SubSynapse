@@ -5,6 +5,7 @@ import type { IconName } from './types';
 
 interface HomePageProps {
   onGetStarted: () => void;
+  isReady: boolean;
 }
 
 const featuredServices: IconName[] = ['netflix', 'spotify', 'youtube', 'disney', 'hbo', 'office', 'adobe', 'canva'];
@@ -105,35 +106,47 @@ const CommunityIcon = () => (
     </svg>
 );
 
+const howItWorksSteps = [
+    { number: 1, title: 'Discover', description: 'Browse a vast marketplace of subscription groups for services like Netflix, Spotify, and more.' },
+    { number: 2, title: 'Join', description: 'Find a group that fits your needs and securely join with just a few clicks. Your slot is guaranteed.' },
+    { number: 3, title: 'Save', description: 'Enjoy premium services at a fraction of the price. We handle the payments, you just relax and save.' }
+];
 
-const HomePage: React.FC<HomePageProps> = ({ onGetStarted }) => {
+const whyChooseUsFeatures = [
+    { icon: <SavingsIcon />, title: "Massive Savings", description: "Keep more money in your pocket. Our members save up to 80% on their monthly subscription bills." },
+    { icon: <AccessIcon />, title: "Access Everything", description: "Don't choose between services. Our model makes it affordable to get everything you want." },
+    { icon: <SecureIcon />, title: "Simple & Secure", description: "We use industry-leading security for payments and data. Your privacy is our priority." },
+    { icon: <CommunityIcon />, title: "Community Focused", description: "Join a community of savvy savers. Create your own groups with friends or join public ones." }
+];
+
+const HomePage: React.FC<HomePageProps> = ({ onGetStarted, isReady }) => {
   return (
     <main className="container mx-auto px-4">
       {/* Hero Section */}
       <section className="text-center py-20">
-        <h1 className="text-5xl md:text-7xl font-bold text-shadow bg-clip-text text-transparent bg-gradient-to-r from-sky-300 to-purple-400 mb-6">
+        <h1 className={`text-5xl md:text-7xl font-bold text-shadow bg-clip-text text-transparent bg-gradient-to-r from-sky-300 to-purple-400 mb-6 transition-all duration-700 ease-out delay-200 ${isReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
           Share Subscriptions, <br /> Split Costs.
         </h1>
-        <p className="text-lg md:text-xl text-slate-300 mb-10 max-w-3xl mx-auto">
+        <p className={`text-lg md:text-xl text-slate-300 mb-10 max-w-3xl mx-auto transition-all duration-700 ease-out delay-[400ms] ${isReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
           Welcome to SubSynapse, the future of subscription management. Effortlessly join groups, share your favorite services, and save hundreds every year.
         </p>
         <button
           onClick={onGetStarted}
-          className="bg-sky-500 hover:bg-sky-400 text-white font-bold py-4 px-10 rounded-full transition duration-300 transform hover:scale-105 shadow-lg text-lg"
+          className={`bg-sky-500 hover:bg-sky-400 text-white font-bold py-4 px-10 rounded-full transition-all duration-700 ease-out transform hover:scale-105 shadow-lg text-lg delay-[600ms] ${isReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}
         >
           Explore Groups & Start Saving
         </button>
       </section>
       
       {/* Featured Services */}
-      <section className="py-16">
+      <section className={`py-16 transition-all duration-700 ease-out delay-[800ms] ${isReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
           <h2 className="text-center text-xl font-semibold text-slate-400 mb-8">
               JOIN GROUPS FOR YOUR FAVORITE SERVICES
           </h2>
           <div className="scroller-fade overflow-hidden">
               <div className="flex w-max gap-x-8 animate-scroll-left-fast">
                 {[...featuredServices, ...featuredServices].map((service, index) => (
-                    <div key={`${service}-${index}`} className="p-3 bg-white/5 rounded-full backdrop-blur-sm flex-shrink-0">
+                    <div key={`${service}-${index}`} className="flex-shrink-0">
                       <Icon name={service} className="w-8 h-8 md:w-10 md:h-10 opacity-80" />
                     </div>
                 ))}
@@ -145,21 +158,19 @@ const HomePage: React.FC<HomePageProps> = ({ onGetStarted }) => {
       <section className="py-16">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-shadow">A New Way to Subscribe</h2>
         <div className="grid md:grid-cols-3 gap-8 text-center group pointer-events-none">
-          <GlassmorphicCard className="p-8 group-hover:opacity-60 group-hover:scale-95 hover:!opacity-100 hover:!scale-100 hover:!-translate-y-2">
-            <div className="text-6xl mb-4 text-sky-400 font-bold">1</div>
-            <h3 className="text-2xl font-bold mb-3">Discover</h3>
-            <p className="text-slate-300">Browse a vast marketplace of subscription groups for services like Netflix, Spotify, and more.</p>
-          </GlassmorphicCard>
-          <GlassmorphicCard className="p-8 group-hover:opacity-60 group-hover:scale-95 hover:!opacity-100 hover:!scale-100 hover:!-translate-y-2">
-            <div className="text-6xl mb-4 text-sky-400 font-bold">2</div>
-            <h3 className="text-2xl font-bold mb-3">Join</h3>
-            <p className="text-slate-300">Find a group that fits your needs and securely join with just a few clicks. Your slot is guaranteed.</p>
-          </GlassmorphicCard>
-          <GlassmorphicCard className="p-8 group-hover:opacity-60 group-hover:scale-95 hover:!opacity-100 hover:!scale-100 hover:!-translate-y-2">
-             <div className="text-6xl mb-4 text-sky-400 font-bold">3</div>
-            <h3 className="text-2xl font-bold mb-3">Save</h3>
-            <p className="text-slate-300">Enjoy premium services at a fraction of the price. We handle the payments, you just relax and save.</p>
-          </GlassmorphicCard>
+          {howItWorksSteps.map((step, index) => (
+            <GlassmorphicCard 
+              key={step.number}
+              className="p-8 group-hover:opacity-60 group-hover:scale-95 hover:!opacity-100 hover:!scale-100 hover:!-translate-y-2"
+              hasAnimation={true}
+              isReady={isReady}
+              animationDelay={400 + index * 150}
+            >
+              <div className="text-6xl mb-4 text-sky-400 font-bold">{step.number}</div>
+              <h3 className="text-2xl font-bold mb-3">{step.title}</h3>
+              <p className="text-slate-300">{step.description}</p>
+            </GlassmorphicCard>
+          ))}
         </div>
       </section>
       
@@ -167,34 +178,21 @@ const HomePage: React.FC<HomePageProps> = ({ onGetStarted }) => {
       <section className="py-16">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-shadow">Why You'll Love SubSynapse</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 group pointer-events-none">
-              <GlassmorphicCard className="p-6 text-center group-hover:opacity-60 group-hover:scale-95 hover:!opacity-100 hover:!scale-100 hover:!-translate-y-2">
+            {whyChooseUsFeatures.map((feature, index) => (
+              <GlassmorphicCard 
+                key={feature.title}
+                className="p-6 text-center group-hover:opacity-60 group-hover:scale-95 hover:!opacity-100 hover:!scale-100 hover:!-translate-y-2"
+                hasAnimation={true}
+                isReady={isReady}
+                animationDelay={800 + index * 150}
+              >
                   <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-                    <SavingsIcon />
+                    {feature.icon}
                   </div>
-                  <h3 className="text-xl font-bold mb-2">Massive Savings</h3>
-                  <p className="text-slate-300">Keep more money in your pocket. Our members save up to 80% on their monthly subscription bills.</p>
+                  <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                  <p className="text-slate-300">{feature.description}</p>
               </GlassmorphicCard>
-              <GlassmorphicCard className="p-6 text-center group-hover:opacity-60 group-hover:scale-95 hover:!opacity-100 hover:!scale-100 hover:!-translate-y-2">
-                  <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-                    <AccessIcon />
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">Access Everything</h3>
-                  <p className="text-slate-300">Don't choose between services. Our model makes it affordable to get everything you want.</p>
-              </GlassmorphicCard>
-              <GlassmorphicCard className="p-6 text-center group-hover:opacity-60 group-hover:scale-95 hover:!opacity-100 hover:!scale-100 hover:!-translate-y-2">
-                  <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-                    <SecureIcon />
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">Simple & Secure</h3>
-                  <p className="text-slate-300">We use industry-leading security for payments and data. Your privacy is our priority.</p>
-              </GlassmorphicCard>
-              <GlassmorphicCard className="p-6 text-center group-hover:opacity-60 group-hover:scale-95 hover:!opacity-100 hover:!scale-100 hover:!-translate-y-2">
-                  <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-                    <CommunityIcon />
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">Community Focused</h3>
-                  <p className="text-slate-300">Join a community of savvy savers. Create your own groups with friends or join public ones.</p>
-              </GlassmorphicCard>
+            ))}
           </div>
       </section>
 

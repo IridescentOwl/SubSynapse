@@ -1,10 +1,12 @@
 import { cn } from '../../lib/utils';
 import React from 'react';
 
-interface AuroraBackgroundProps extends React.HTMLProps<HTMLDivElement> {
-  children: React.ReactNode;
+// FIX: Switched from React.HTMLAttributes to React.HTMLProps to correctly type props.
+// This resolves errors related to missing 'className' and 'children' properties by using a more inclusive type that provides them correctly.
+// FIX: Changed to a type alias with an intersection to resolve TS errors with property detection.
+type AuroraBackgroundProps = {
   showRadialGradient?: boolean;
-}
+} & React.HTMLProps<HTMLDivElement>;
 
 export const AuroraBackground = ({
   className,

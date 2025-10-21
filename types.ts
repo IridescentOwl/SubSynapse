@@ -7,6 +7,10 @@ export interface SubscriptionGroup {
   slotsFilled: number;
   tags: string[];
   category: 'Video' | 'Music' | 'Productivity' | 'Design';
+  postedBy: {
+    name: string;
+    rating: number;
+  };
 }
 
 export interface MySubscription extends SubscriptionGroup {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { MySubscription } from '../types';
 
 interface ChartData {
@@ -15,19 +15,25 @@ const CATEGORY_COLORS: { [key: string]: string } = {
 };
 
 const SubscriptionDonutChart: React.FC<{ subscriptions: MySubscription[] }> = ({ subscriptions }) => {
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+    
   const data: ChartData[] = React.useMemo(() => {
-    const categoryTotals = subscriptions.reduce((acc, sub) => {
+    // FIX: The `reduce` method's return type is inferred from its initial value (`{}`).
+    // By providing a generic type argument, we ensure `categoryTotals` is correctly
+    // typed as `Record<string, number>`, fixing downstream type errors.
+    const categoryTotals = subscriptions.reduce<Record<string, number>>((acc, sub) => {
       acc[sub.category] = (acc[sub.category] || 0) + sub.myShare;
       return acc;
-    }, {} as { [key: string]: number });
+    }, {});
 
-    return Object.entries(categoryTotals)
+    const mappedData = Object.entries(categoryTotals)
       .map(([category, value]) => ({
         category,
         value,
         color: CATEGORY_COLORS[category] || '#94a3b8', // slate-400 for fallback
-      }))
-      .sort((a, b) => b.value - a.value);
+      }));
+
+    return mappedData.sort((a, b) => b.value - a.value);
   }, [subscriptions]);
 
   const totalValue = data.reduce((sum, item) => sum + item.value, 0);
@@ -38,7 +44,6 @@ const SubscriptionDonutChart: React.FC<{ subscriptions: MySubscription[] }> = ({
   const radius = 80;
   const circumference = 2 * Math.PI * radius;
 
-  // Pre-calculate segment data declaratively to avoid mutation during render
   const segmentsData = data.reduce<Array<ChartData & { percentage: number; accumulatedPercentage: number; }>>((acc, item) => {
     const percentage = (item.value / totalValue) * 100;
     const prevAccumulated = acc.length > 0 ? acc[acc.length - 1].accumulatedPercentage : 0;
@@ -55,10 +60,11 @@ const SubscriptionDonutChart: React.FC<{ subscriptions: MySubscription[] }> = ({
       <div className="relative w-48 h-48">
         <svg className="w-full h-full transform -rotate-90" viewBox="0 0 200 200">
           <circle cx="100" cy="100" r={radius} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="20" />
-          {segmentsData.map(({ color, percentage, accumulatedPercentage }, index) => {
+          {segmentsData.map(({ category, color, percentage, accumulatedPercentage }, index) => {
             const prevAccumulated = index > 0 ? segmentsData[index - 1].accumulatedPercentage : 0;
             const rotation = (prevAccumulated / 100) * 360;
             const strokeDashoffset = circumference - (percentage / 100) * circumference;
+            const isHovered = hoveredCategory === category;
 
             return (
               <circle
@@ -71,8 +77,14 @@ const SubscriptionDonutChart: React.FC<{ subscriptions: MySubscription[] }> = ({
                 strokeWidth="20"
                 strokeDasharray={circumference}
                 strokeDashoffset={strokeDashoffset}
-                className="transition-all duration-1000 ease-out"
-                style={{ transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }}
+                onMouseEnter={() => setHoveredCategory(category)}
+                onMouseLeave={() => setHoveredCategory(null)}
+                className={`transition-all duration-300 ease-out ${hoveredCategory && !isHovered ? 'opacity-30' : 'opacity-100'}`}
+                style={{ 
+                    transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+                    transformOrigin: 'center',
+                    rotate: `${rotation}deg`
+                }}
               />
             );
           })}
@@ -84,7 +96,12 @@ const SubscriptionDonutChart: React.FC<{ subscriptions: MySubscription[] }> = ({
       </div>
       <div className="flex flex-col gap-2 text-sm">
         {data.map(({ category, value, color }) => (
-          <div key={category} className="flex items-center">
+          <div 
+            key={category} 
+            className={`flex items-center transition-all duration-300 cursor-pointer ${hoveredCategory && hoveredCategory !== category ? 'opacity-50' : 'opacity-100'}`}
+            onMouseEnter={() => setHoveredCategory(category)}
+            onMouseLeave={() => setHoveredCategory(null)}
+          >
             <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: color }}></span>
             <span className="text-slate-300 mr-2">{category}:</span>
             <span className="font-semibold text-white">₹{value.toFixed(0)}</span>

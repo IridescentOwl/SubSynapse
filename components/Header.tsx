@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Page, DashboardTab } from '../App';
+import type { Page, DashboardTab, AppState } from '../App';
 
 interface HeaderProps {
   isVisible: boolean;
@@ -8,6 +8,8 @@ interface HeaderProps {
   onNavigate: (page: Page, tab?: DashboardTab) => void;
   onLogin: () => void;
   onLogout: () => void;
+  onCreateGroup: () => void;
+  appState: AppState;
 }
 
 const NavLink: React.FC<{onClick: () => void, children: React.ReactNode, isActive?: boolean}> = ({ onClick, children, isActive = false }) => (
@@ -18,36 +20,51 @@ const NavLink: React.FC<{onClick: () => void, children: React.ReactNode, isActiv
 );
 
 
-const Header: React.FC<HeaderProps> = ({ isVisible, page, activeDashboardTab, onNavigate, onLogin, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ isVisible, page, activeDashboardTab, onNavigate, onLogin, onLogout, onCreateGroup, appState }) => {
   const isLoggedIn = page === 'dashboard' || page === 'profile';
 
   const isMarketplaceActive = page === 'dashboard' && activeDashboardTab === 'explore';
   const isDashboardActive = page === 'dashboard' && activeDashboardTab === 'dashboard';
   const isProfileActive = page === 'profile';
+  
+  const contentIsVisible = appState === 'finished';
 
   return (
     <header className={`sticky top-6 z-50 transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20 bg-black/20 backdrop-blur-lg rounded-full px-8 shadow-lg border border-white/10">
-          <div className="flex-shrink-0">
-            <button onClick={() => onNavigate('home')} className="flex items-center space-x-2">
-               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-sky-400" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
-               </svg>
-              <span className="text-2xl font-bold text-white">SubSynapse</span>
-            </button>
-          </div>
+        <div className="relative flex items-center justify-between h-20">
           
-          <div className="hidden md:flex flex-1 items-center justify-center space-x-8">
+          <div className={`absolute inset-0 bg-black/20 backdrop-blur-lg rounded-full shadow-lg border border-white/10 transition-opacity duration-1000 ease-in ${appState !== 'loading' ? 'opacity-100' : 'opacity-0'}`} />
+
+          <button 
+            onClick={() => onNavigate('home')} 
+            className={`absolute flex items-center space-x-2 z-10 transition-all duration-1000 ease-in-out transform-gpu ${
+              appState === 'loading'
+                ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-125'
+                : 'top-1/2 left-8 -translate-y-1/2 scale-100'
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-sky-400" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+            </svg>
+            <span className="text-2xl font-bold text-white">SubSynapse</span>
+          </button>
+          
+          <div className="w-[190px] flex-shrink-0" />
+
+          <div className={`hidden md:flex flex-1 items-center justify-center space-x-8 transition-all duration-500 ease-out ${contentIsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3'}`}>
             <NavLink onClick={() => onNavigate('dashboard', 'explore')} isActive={isMarketplaceActive}>Marketplace</NavLink>
             <NavLink onClick={() => onNavigate('dashboard', 'dashboard')} isActive={isDashboardActive}>Dashboard</NavLink>
             <NavLink onClick={() => onNavigate('profile')} isActive={isProfileActive}>Profile</NavLink>
           </div>
 
-          <div className="hidden md:flex items-center space-x-4">
+          <div className={`hidden md:flex items-center space-x-4 pr-8 transition-all duration-500 ease-out ${contentIsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3'}`}>
             {isLoggedIn ? (
                 <>
-                    <button className="bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 px-6 rounded-full transition duration-300 transform hover:scale-105 shadow-lg">
+                    <button onClick={onCreateGroup} className="bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 px-6 rounded-full transition duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex items-center gap-2">
+                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                        </svg>
                         Create Group
                     </button>
                     <button onClick={onLogout} className="font-semibold text-slate-300 hover:text-white transition">
@@ -56,10 +73,10 @@ const Header: React.FC<HeaderProps> = ({ isVisible, page, activeDashboardTab, on
                 </>
             ) : (
                 <>
-                    <button onClick={onLogin} className="font-semibold text-slate-300 hover:text-white transition px-4 py-2">
+                    <button onClick={onLogin} className="font-semibold text-slate-300 hover:text-white transition px-4 py-2 active:scale-95">
                         Login
                     </button>
-                    <button onClick={onLogin} className="bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 px-6 rounded-full transition duration-300 transform hover:scale-105 shadow-lg">
+                    <button onClick={onLogin} className="bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 px-6 rounded-full transition duration-300 transform hover:scale-105 active:scale-95 shadow-lg">
                         Sign Up
                     </button>
                 </>

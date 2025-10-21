@@ -4,7 +4,7 @@ import Icon from './components/Icon';
 import type { IconName } from './types';
 
 interface HomePageProps {
-  onGetStarted: () => void;
+  onLogin: () => void;
   isReady: boolean;
 }
 
@@ -119,7 +119,7 @@ const whyChooseUsFeatures = [
     { icon: <CommunityIcon />, title: "Community Focused", description: "Join a community of savvy savers. Create your own groups with friends or join public ones." }
 ];
 
-const HomePage: React.FC<HomePageProps> = ({ onGetStarted, isReady }) => {
+const HomePage: React.FC<HomePageProps> = ({ onLogin, isReady }) => {
   return (
     <main className="container mx-auto px-4">
       {/* Hero Section */}
@@ -131,7 +131,7 @@ const HomePage: React.FC<HomePageProps> = ({ onGetStarted, isReady }) => {
           Welcome to SubSynapse, the future of subscription management. Effortlessly join groups, share your favorite services, and save hundreds every year.
         </p>
         <button
-          onClick={onGetStarted}
+          onClick={onLogin}
           className={`bg-sky-500 hover:bg-sky-400 text-white font-bold py-4 px-10 rounded-full transition-all duration-700 ease-out transform hover:scale-105 shadow-lg text-lg delay-[600ms] ${isReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}
         >
           Explore Groups & Start Saving
@@ -145,7 +145,7 @@ const HomePage: React.FC<HomePageProps> = ({ onGetStarted, isReady }) => {
           </h2>
           <div className="scroller-fade overflow-hidden">
               <div className="flex w-max gap-x-8 animate-scroll-left-fast">
-                {[...featuredServices, ...featuredServices].map((service, index) => (
+                {[...featuredServices, ...featuredServices, ...featuredServices, ...featuredServices].map((service, index) => (
                     <div key={`${service}-${index}`} className="flex-shrink-0">
                       <Icon name={service} className="w-8 h-8 md:w-10 md:h-10 opacity-80" />
                     </div>
@@ -201,7 +201,7 @@ const HomePage: React.FC<HomePageProps> = ({ onGetStarted, isReady }) => {
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-shadow">Loved by Users Worldwide</h2>
           <div className="scroller-fade overflow-hidden">
               <div className="flex w-max gap-8 animate-scroll-left-slow py-4">
-                  {[...testimonials, ...testimonials].map((testimonial, index) => (
+                  {[...testimonials, ...testimonials, ...testimonials, ...testimonials].map((testimonial, index) => (
                       <GlassmorphicCard key={index} className="p-8 w-[350px] md:w-[400px] flex-shrink-0">
                           <p className="text-slate-200 mb-4 text-lg">"{testimonial.quote}"</p>
                           <p className="font-bold text-sky-300 text-right">- {testimonial.author}</p>
@@ -239,7 +239,7 @@ const HomePage: React.FC<HomePageProps> = ({ onGetStarted, isReady }) => {
           <h2 className="text-4xl md:text-5xl font-bold text-shadow mb-6">Ready to Start Saving?</h2>
           <p className="text-lg text-slate-300 mb-10 max-w-2xl mx-auto">Join thousands of users who are cutting their subscription costs. Explore open groups or create your own today.</p>
            <button
-             onClick={onGetStarted}
+             onClick={onLogin}
              className="bg-sky-500 hover:bg-sky-400 text-white font-bold py-4 px-10 rounded-full transition duration-300 transform hover:scale-105 shadow-lg text-lg"
            >
              Get Started For Free

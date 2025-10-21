@@ -3,14 +3,12 @@ import GlassmorphicCard from './GlassmorphicCard';
 import Icon from './Icon';
 import type { MySubscription } from '../types';
 
-const daysUntil = (dateStr: string): number => {
-    const futureDate = new Date(dateStr);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    futureDate.setHours(0, 0, 0, 0);
-    const diffTime = futureDate.getTime() - today.getTime();
-    if (diffTime < 0) return 0;
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+const daysBetween = (dateStr1: string, dateStr2: string): number => {
+    const d1 = new Date(dateStr1);
+    const d2 = new Date(dateStr2);
+    d1.setHours(0,0,0,0);
+    d2.setHours(0,0,0,0);
+    return Math.round((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
 };
 
 interface MyDetailedSubscriptionCardProps {
@@ -20,7 +18,8 @@ interface MyDetailedSubscriptionCardProps {
 }
 
 const MyDetailedSubscriptionCard: React.FC<MyDetailedSubscriptionCardProps> = ({ sub, animationDelay, onManageClick }) => {
-    const { name, icon, myShare, nextPaymentDate, slotsTotal, slotsFilled, postedBy } = sub;
+    // FIX: Add `slotsTotal` to the destructuring assignment.
+    const { name, icon, myShare, nextPaymentDate, endDate, membershipType, slotsFilled, slotsTotal, postedBy } = sub;
     const [isProgressBarLoaded, setIsProgressBarLoaded] = React.useState(false);
 
     React.useEffect(() => {
@@ -28,10 +27,34 @@ const MyDetailedSubscriptionCard: React.FC<MyDetailedSubscriptionCardProps> = ({
         return () => clearTimeout(timer);
     }, [animationDelay]);
 
-    const daysRemaining = daysUntil(nextPaymentDate);
-    const cycleLength = 30;
-    const daysPassed = cycleLength - daysRemaining;
-    const progressPercentage = Math.max(0, Math.min(100, (daysPassed / cycleLength) * 100));
+    const getProgress = () => {
+        if (membershipType === 'temporary' && endDate) {
+            const totalDuration = daysBetween(new Date(endDate).toISOString(), new Date(new Date(endDate).getTime() - 30 * 24 * 60 * 60 * 1000).toISOString());
+            const daysRemaining = Math.max(0, daysBetween(new Date().toISOString(), endDate));
+            const daysPassed = totalDuration - daysRemaining;
+            const progress = (daysPassed / totalDuration) * 100;
+            return {
+                progressPercentage: Math.max(0, Math.min(100, progress)),
+                timeLeft: `${daysRemaining} days left`,
+                label: `Expires on:`,
+                date: new Date(endDate).toLocaleDateString()
+            };
+        }
+        
+        // Monthly
+        const daysRemaining = nextPaymentDate ? daysBetween(new Date().toISOString(), nextPaymentDate) : 0;
+        const cycleLength = 30;
+        const daysPassed = cycleLength - daysRemaining;
+        const progress = (daysPassed / cycleLength) * 100;
+        return {
+            progressPercentage: Math.max(0, Math.min(100, progress)),
+            timeLeft: `${daysRemaining} days left`,
+            label: 'Next Payment:',
+            date: nextPaymentDate || 'N/A'
+        };
+    };
+
+    const { progressPercentage, timeLeft, label, date } = getProgress();
 
     return (
         <GlassmorphicCard 
@@ -46,12 +69,14 @@ const MyDetailedSubscriptionCard: React.FC<MyDetailedSubscriptionCardProps> = ({
                     </div>
                     <div>
                         <h3 className="text-xl font-bold text-white text-shadow">{name}</h3>
-                        <p className="text-sm text-slate-400">Group Subscription</p>
+                        <p className={`text-sm ${membershipType === 'temporary' ? 'text-purple-300' : 'text-slate-400'}`}>
+                            {membershipType === 'temporary' ? 'Temporary Access' : 'Monthly Subscription'}
+                        </p>
                     </div>
                 </div>
                 <div className="text-right">
-                    <p className="text-2xl font-bold text-sky-300">₹{myShare.toFixed(0)}</p>
-                    <p className="text-slate-300 text-sm">/ month</p>
+                    <p className="text-2xl font-bold text-sky-300">{myShare.toFixed(0)}</p>
+                    <p className="text-slate-300 text-sm">Credits</p>
                 </div>
             </div>
 
@@ -66,13 +91,13 @@ const MyDetailedSubscriptionCard: React.FC<MyDetailedSubscriptionCardProps> = ({
                     <span className="font-bold text-white">{postedBy.name}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                    <span className="font-semibold text-slate-300">Next Payment:</span>
-                    <span className="font-bold text-white">{nextPaymentDate}</span>
+                    <span className="font-semibold text-slate-300">{label}</span>
+                    <span className="font-bold text-white">{date}</span>
                 </div>
                 <div>
                     <div className="flex justify-between items-center text-sm text-slate-300 mb-1">
-                        <span>Billing Cycle</span>
-                        <span>{daysRemaining} days left</span>
+                        <span>{membershipType === 'temporary' ? 'Access Duration' : 'Billing Cycle'}</span>
+                        <span>{timeLeft}</span>
                     </div>
                     <div className="w-full bg-black/30 rounded-full h-2.5">
                         <div

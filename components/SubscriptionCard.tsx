@@ -1,21 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import GlassmorphicCard from './GlassmorphicCard';
 import Icon from './Icon';
 import type { SubscriptionGroup } from '../types';
 
-type ButtonState = 'idle' | 'loading' | 'success';
-
 interface SubscriptionCardProps {
   group: SubscriptionGroup;
   animationDelay: number;
+  onJoinGroup: (group: SubscriptionGroup) => void;
 }
 
-const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ group, animationDelay }) => {
+const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ group, animationDelay, onJoinGroup }) => {
   const { name, icon, totalPrice, slotsTotal, slotsFilled, tags, postedBy } = group;
-  const [buttonState, setButtonState] = useState<ButtonState>('idle');
-  const [isProgressBarLoaded, setIsProgressBarLoaded] = useState(false);
+  const [isProgressBarLoaded, setIsProgressBarLoaded] = React.useState(false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     // Animate progress bar slightly after the card has animated in
     const timer = setTimeout(() => setIsProgressBarLoaded(true), animationDelay + 200);
     return () => clearTimeout(timer);
@@ -25,26 +23,6 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ group, animationDel
   const slotsAvailable = slotsTotal - slotsFilled;
   const progressPercentage = (slotsFilled / slotsTotal) * 100;
   const isFull = slotsAvailable <= 0;
-
-  const handleJoinClick = () => {
-    setButtonState('loading');
-    setTimeout(() => {
-      setButtonState('success');
-      setTimeout(() => setButtonState('idle'), 1500);
-    }, 1500);
-  };
-  
-  const getButtonContent = () => {
-    if (isFull) return 'Group Full';
-    switch (buttonState) {
-      case 'loading':
-        return <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>;
-      case 'success':
-        return 'Joined!';
-      default:
-        return 'Join Group';
-    }
-  };
 
   return (
     <GlassmorphicCard 
@@ -75,11 +53,11 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ group, animationDel
       </div>
 
       <div className="flex items-baseline mb-4">
-        <span className="text-3xl font-bold text-sky-300">₹{pricePerPerson}</span>
-        <span className="text-slate-300 ml-1.5">/ month</span>
+        <span className="text-3xl font-bold text-sky-300">{pricePerPerson}</span>
+        <span className="text-slate-300 ml-1.5">Credits/month</span>
       </div>
       <p className="text-sm text-slate-400 mb-4">
-        Total: ₹{totalPrice.toFixed(0)}/month for {slotsTotal} members
+        Total: {totalPrice.toFixed(0)} Credits/month for {slotsTotal} members
       </p>
 
       <div className="space-y-2 mb-5 flex-grow">
@@ -104,17 +82,15 @@ const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ group, animationDel
       </div>
       
       <button 
-        onClick={handleJoinClick}
-        disabled={isFull || buttonState !== 'idle'}
+        onClick={() => onJoinGroup(group)}
+        disabled={isFull}
         className={`w-full font-bold py-3 px-6 rounded-xl transition duration-300 transform hover:scale-105 shadow-lg text-center ${
           isFull 
             ? 'bg-slate-600/50 text-slate-400 cursor-not-allowed' 
-            : buttonState === 'success'
-            ? 'bg-green-500 text-white'
             : 'bg-sky-500 hover:bg-sky-400 text-white'
         }`}
       >
-        {getButtonContent()}
+        {isFull ? 'Group Full' : 'Join Group'}
       </button>
     </GlassmorphicCard>
   );

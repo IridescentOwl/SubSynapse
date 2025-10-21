@@ -6,7 +6,14 @@ import DashboardPage from './DashboardPage';
 import ProfilePage from './ProfilePage';
 import ManageSubscriptionModal from './components/ManageSubscriptionModal';
 import CreateGroupModal from './components/CreateGroupModal';
-import type { MySubscription } from './types';
+import JoinGroupModal from './components/JoinGroupModal';
+import AddCreditsModal from './components/AddCreditsModal';
+import AuthModal from './components/AuthModal';
+import WithdrawCreditsModal from './components/WithdrawCreditsModal';
+import type { MySubscription, SubscriptionGroup } from './types';
+import { useAuth } from './AuthContext';
+import * as api from './services/api';
+
 
 export type Page = 'home' | 'dashboard' | 'profile';
 export type DashboardTab = 'explore' | 'dashboard';
@@ -16,13 +23,18 @@ function App() {
   const [page, setPage] = useState<Page>('home');
   const [activeDashboardTab, setActiveDashboardTab] = useState<DashboardTab>('explore');
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [appState, setAppState] = useState<AppState>('loading');
   
+  const { user, mySubscriptions, isAuthenticated, addCredits, joinGroup, leaveGroup, createGroup, requestWithdrawal, syncUserData, changePassword, updateProfilePicture } = useAuth();
+
   // Modal States
   const [isManageModalOpen, setManageModalOpen] = useState(false);
   const [isCreateGroupModalOpen, setCreateGroupModalOpen] = useState(false);
+  const [isJoinGroupModalOpen, setJoinGroupModalOpen] = useState(false);
+  const [isAddCreditsModalOpen, setAddCreditsModalOpen] = useState(false);
+  const [isAuthModalOpen, setAuthModalOpen] = useState(false);
+  const [isWithdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [groupToJoin, setGroupToJoin] = useState<SubscriptionGroup | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<MySubscription | null>(null);
 
   const lastScrollY = useRef(0);
@@ -52,22 +64,28 @@ function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [appState]);
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    setPage('dashboard');
-    setActiveDashboardTab('explore');
-    window.scrollTo(0, 0);
-  };
+  useEffect(() => {
+    if (isAuthenticated) {
+      setAuthModalOpen(false);
+      if (page === 'home') {
+        setPage('dashboard');
+      }
+    } else {
+      setPage('home');
+    }
+  }, [isAuthenticated, page]);
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
+    const { logout } = useAuth();
+    logout();
     setPage('home');
     window.scrollTo(0, 0);
   };
   
   const handleNavigate = (newPage: Page, tab: DashboardTab = 'explore') => {
-    if ((newPage === 'dashboard' || newPage === 'profile') && !isLoggedIn) {
-      setIsLoggedIn(true);
+    if ((newPage === 'dashboard' || newPage === 'profile') && !isAuthenticated) {
+      setAuthModalOpen(true);
+      return;
     }
     
     setPage(newPage);
@@ -81,27 +99,76 @@ function App() {
     setSelectedSubscription(subscription);
     setManageModalOpen(true);
   };
+  
+  const handleOpenJoinModal = (group: SubscriptionGroup) => {
+    if (!isAuthenticated) {
+        setAuthModalOpen(true);
+        return;
+    }
+    setGroupToJoin(group);
+    setJoinGroupModalOpen(true);
+  };
+  
+  const handleJoinGroup = async (subscription: MySubscription, cost: number) => {
+    await joinGroup(subscription, cost);
+  };
+
+  const handleCloseJoinModalAndSync = () => {
+    setJoinGroupModalOpen(false);
+    syncUserData();
+  }
+
+  const handleLeaveGroup = async (subscriptionId: string, refund: number = 0) => {
+    await leaveGroup(subscriptionId, refund);
+    setManageModalOpen(false);
+  };
+
+  const handleAddCredits = async (amount: number) => {
+    await addCredits(amount);
+    setAddCreditsModalOpen(false);
+  };
+
+  const handleRequestWithdrawal = async (amount: number, upiId: string) => {
+    await requestWithdrawal(amount, upiId);
+    setWithdrawModalOpen(false);
+  };
+  
+  const handleCreateGroup = async (groupData: Omit<SubscriptionGroup, 'id' | 'postedBy' | 'slotsFilled'>) => {
+      await createGroup(groupData);
+      setCreateGroupModalOpen(false);
+      handleNavigate('dashboard', 'dashboard');
+  };
 
   const handleOpenCreateGroupModal = () => {
+    if (!isAuthenticated) {
+        setAuthModalOpen(true);
+        return;
+    }
     setCreateGroupModalOpen(true);
   };
   
   const renderPage = () => {
-    const currentPage = isLoggedIn ? page : 'home';
+    const currentPage = isAuthenticated ? page : 'home';
     switch (currentPage) {
       case 'dashboard':
         return <DashboardPage 
-            searchTerm={searchTerm} 
-            setSearchTerm={setSearchTerm} 
             activeTab={activeDashboardTab}
             setActiveTab={setActiveDashboardTab}
+            mySubscriptions={mySubscriptions || []}
             onManageSubscription={handleOpenManageModal}
+            onJoinGroup={handleOpenJoinModal}
             />;
       case 'profile':
-        return <ProfilePage />;
+        return user ? <ProfilePage 
+                        user={user} 
+                        onAddCredits={() => setAddCreditsModalOpen(true)} 
+                        onWithdrawCredits={() => setWithdrawModalOpen(true)}
+                        onChangePassword={changePassword}
+                        onUpdateProfilePicture={updateProfilePicture}
+                      /> : null;
       case 'home':
       default:
-        return <HomePage onGetStarted={handleLogin} isReady={appState === 'finished'} />;
+        return <HomePage onLogin={() => setAuthModalOpen(true)} isReady={appState === 'finished'} />;
     }
   };
 
@@ -110,13 +177,15 @@ function App() {
       <div className="relative z-10">
         <Header 
           isVisible={isHeaderVisible}
-          page={isLoggedIn ? page : 'home'}
+          page={isAuthenticated ? page : 'home'}
+          user={user}
           activeDashboardTab={activeDashboardTab}
           onNavigate={handleNavigate}
-          onLogin={handleLogin}
+          onLogin={() => setAuthModalOpen(true)}
           onLogout={handleLogout}
           appState={appState}
           onCreateGroup={handleOpenCreateGroupModal}
+          onAddCredits={() => setAddCreditsModalOpen(true)}
         />
         {appState !== 'loading' && renderPage()}
       </div>
@@ -125,11 +194,40 @@ function App() {
           isOpen={isManageModalOpen}
           onClose={() => setManageModalOpen(false)}
           subscription={selectedSubscription}
+          onLeaveGroup={handleLeaveGroup}
+        />
+      )}
+      {groupToJoin && user && (
+        <JoinGroupModal
+          isOpen={isJoinGroupModalOpen}
+          onClose={handleCloseJoinModalAndSync}
+          group={groupToJoin}
+          userCredits={user.creditBalance}
+          onConfirmJoin={handleJoinGroup}
+          onAddCredits={() => setAddCreditsModalOpen(true)}
         />
       )}
       <CreateGroupModal
         isOpen={isCreateGroupModalOpen}
         onClose={() => setCreateGroupModalOpen(false)}
+        onCreateGroup={handleCreateGroup}
+      />
+      <AddCreditsModal
+        isOpen={isAddCreditsModalOpen}
+        onClose={() => setAddCreditsModalOpen(false)}
+        onAddCredits={handleAddCredits}
+      />
+      {user && (
+        <WithdrawCreditsModal
+          isOpen={isWithdrawModalOpen}
+          onClose={() => setWithdrawModalOpen(false)}
+          userBalance={user.creditBalance}
+          onConfirmWithdrawal={handleRequestWithdrawal}
+        />
+      )}
+      <AuthModal 
+        isOpen={isAuthModalOpen}
+        onClose={() => setAuthModalOpen(false)}
       />
     </AuroraBackground>
   );

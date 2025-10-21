@@ -1,12 +1,12 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import SubscriptionCard from './components/SubscriptionCard';
 import GlassmorphicCard from './components/GlassmorphicCard';
-import { SUBSCRIPTION_GROUPS, MY_SUBSCRIPTIONS } from './constants';
 import type { SubscriptionGroup, MySubscription } from './types';
 import MyDetailedSubscriptionCard from './components/MyDetailedSubscriptionCard';
 import type { DashboardTab } from './App';
 import SubscriptionDonutChart from './components/SubscriptionDonutChart';
 import CustomSelect from './components/CustomSelect';
+import * as api from './services/api';
 
 const useCountUp = (end: number, duration: number = 1500) => {
   const [count, setCount] = useState(0);
@@ -34,18 +34,18 @@ const useCountUp = (end: number, duration: number = 1500) => {
 };
 
 interface DashboardPageProps {
-  searchTerm: string;
-  setSearchTerm: (term: string) => void;
   activeTab: DashboardTab;
   setActiveTab: (tab: DashboardTab) => void;
+  mySubscriptions: MySubscription[];
   onManageSubscription: (subscription: MySubscription) => void;
+  onJoinGroup: (group: SubscriptionGroup) => void;
 }
 
 const StatCard: React.FC<{ title: string; value: string; className?: string }> = ({ title, value, className }) => {
     const numericValue = useMemo(() => parseFloat(value.replace(/[^0-9.-]+/g, "")), [value]);
     const animatedValue = useCountUp(isNaN(numericValue) ? 0 : numericValue);
-    const prefix = useMemo(() => value.match(/^[^0-9]*/)?.[0] || '', [value]);
-    const formattedValue = isNaN(numericValue) ? value : `${prefix}${Math.round(animatedValue)}`;
+    const suffix = useMemo(() => value.match(/[ a-zA-Z/]*$/)?.[0] || '', [value]);
+    const formattedValue = isNaN(numericValue) ? value : `${Math.round(animatedValue).toLocaleString()}${suffix}`;
 
     return (
         <GlassmorphicCard className="p-6 text-center" hasAnimation>
@@ -56,17 +56,39 @@ const StatCard: React.FC<{ title: string; value: string; className?: string }> =
 };
 
 const ALL_CATEGORIES = 'All Categories';
-const categories = [ALL_CATEGORIES, ...Array.from(new Set(SUBSCRIPTION_GROUPS.map(g => g.category)))];
-const categoryOptions = categories.map(c => ({ value: c, label: c }));
 
-type SortOption = 'default' | 'price' | 'slots';
-
-const DashboardPage: React.FC<DashboardPageProps> = ({ searchTerm, setSearchTerm, activeTab, setActiveTab, onManageSubscription }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ activeTab, setActiveTab, mySubscriptions, onManageSubscription, onJoinGroup }) => {
+  const [allGroups, setAllGroups] = useState<SubscriptionGroup[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState(ALL_CATEGORIES);
   const [sortBy, setSortBy] = useState<SortOption>('default');
+  
+  const categories = useMemo(() => [ALL_CATEGORIES, ...Array.from(new Set(allGroups.map(g => g.category)))], [allGroups]);
+  const categoryOptions = categories.map(c => ({ value: c, label: c }));
+
+  useEffect(() => {
+      const loadGroups = async () => {
+          setIsLoading(true);
+          try {
+              const groups = await api.fetchGroups();
+              setAllGroups(groups);
+          } catch (error) {
+              console.error("Failed to fetch groups", error);
+          } finally {
+              setIsLoading(false);
+          }
+      };
+      if (activeTab === 'explore') {
+        loadGroups();
+      }
+  }, [activeTab]);
+
+
+  type SortOption = 'default' | 'price' | 'slots';
 
   const filteredSubscriptions = useMemo(() => {
-    let groups: SubscriptionGroup[] = [...SUBSCRIPTION_GROUPS];
+    let groups = allGroups.filter(group => group.status === 'active');
 
     if (searchTerm) {
       groups = groups.filter(group =>
@@ -86,13 +108,23 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ searchTerm, setSearchTerm
     }
 
     return groups;
-  }, [searchTerm, filterCategory, sortBy]);
+  }, [searchTerm, filterCategory, sortBy, allGroups]);
 
-  const { totalMonthlySavings, nextBillTotal } = useMemo(() => {
-      const savings = MY_SUBSCRIPTIONS.reduce((acc, sub) => acc + (sub.totalPrice / sub.slotsTotal) - sub.myShare, 0);
-      const bill = MY_SUBSCRIPTIONS.reduce((acc, sub) => acc + sub.myShare, 0);
-      return { totalMonthlySavings: savings, nextBillTotal: bill };
-  }, []);
+  const { totalMonthlySavings, monthlyCreditUsage } = useMemo(() => {
+      const savings = mySubscriptions.reduce((acc, sub) => {
+        if (sub.membershipType === 'monthly') {
+           return acc + (sub.totalPrice / sub.slotsTotal) - sub.myShare;
+        }
+        return acc;
+      }, 0);
+      const usage = mySubscriptions.reduce((acc, sub) => {
+         if (sub.membershipType === 'monthly') {
+          return acc + sub.myShare;
+         }
+         return acc;
+      }, 0);
+      return { totalMonthlySavings: savings, monthlyCreditUsage: usage };
+  }, [mySubscriptions]);
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -123,10 +155,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ searchTerm, setSearchTerm
             </div>
 
 
-            {filteredSubscriptions.length > 0 ? (
+            {isLoading ? (
+                 <div className="text-center py-16">
+                    <p className="text-2xl font-semibold text-slate-300">Loading groups...</p>
+                 </div>
+            ) : filteredSubscriptions.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 group pointer-events-none">
                     {filteredSubscriptions.map((group, index) => (
-                        <SubscriptionCard key={group.id} group={group} animationDelay={index * 100} />
+                        <SubscriptionCard key={group.id} group={group} animationDelay={index * 100} onJoinGroup={onJoinGroup} />
                     ))}
                 </div>
             ) : (
@@ -146,26 +182,33 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ searchTerm, setSearchTerm
               <h1 className="text-3xl md:text-4xl font-bold mb-8 text-shadow text-center pt-8">My Dashboard</h1>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:col-span-1">
-                      <StatCard title="Monthly Savings" value={`₹${totalMonthlySavings.toFixed(0)}`} className="text-green-400" />
-                      <StatCard title="Next Bill Total" value={`₹${nextBillTotal.toFixed(0)}`} className="text-sky-300" />
-                      <StatCard title="Active Subscriptions" value={MY_SUBSCRIPTIONS.length.toString()} className="text-purple-400 md:col-span-2" />
+                      <StatCard title="Monthly Savings" value={`${totalMonthlySavings.toFixed(0)} Credits`} className="text-green-400" />
+                      <StatCard title="Monthly Usage" value={`${monthlyCreditUsage.toFixed(0)} Credits`} className="text-sky-300" />
+                      <StatCard title="Active Subscriptions" value={mySubscriptions.length.toString()} className="text-purple-400 md:col-span-2" />
                   </div>
                   <GlassmorphicCard className="p-6 flex items-center justify-center min-h-[200px]" hasAnimation animationDelay={150}>
-                      <SubscriptionDonutChart subscriptions={MY_SUBSCRIPTIONS} />
+                      <SubscriptionDonutChart subscriptions={mySubscriptions} />
                   </GlassmorphicCard>
               </div>
 
               <h2 className="text-2xl font-bold mb-6">Manage Your Subscriptions</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 group pointer-events-none">
-                  {MY_SUBSCRIPTIONS.map((sub, index) => (
-                      <MyDetailedSubscriptionCard 
-                        key={sub.id} 
-                        sub={sub} 
-                        animationDelay={index * 100}
-                        onManageClick={() => onManageSubscription(sub)}
-                      />
-                  ))}
-              </div>
+              {mySubscriptions.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 group pointer-events-none">
+                    {mySubscriptions.map((sub, index) => (
+                        <MyDetailedSubscriptionCard 
+                          key={sub.id} 
+                          sub={sub} 
+                          animationDelay={index * 100}
+                          onManageClick={() => onManageSubscription(sub)}
+                        />
+                    ))}
+                </div>
+              ) : (
+                 <GlassmorphicCard className="text-center py-16" hasAnimation>
+                    <p className="text-2xl font-semibold text-slate-300">No active subscriptions.</p>
+                    <p className="text-slate-400 mt-2">Explore the marketplace to join a group!</p>
+                </GlassmorphicCard>
+              )}
           </div>
       )}
 

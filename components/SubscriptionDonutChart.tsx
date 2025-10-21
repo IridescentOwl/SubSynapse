@@ -18,11 +18,10 @@ const SubscriptionDonutChart: React.FC<{ subscriptions: MySubscription[] }> = ({
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
     
   const data: ChartData[] = React.useMemo(() => {
-    // FIX: The `reduce` method's return type is inferred from its initial value.
-    // By casting the initial value, we ensure `categoryTotals` is correctly
-    // typed as `Record<string, number>`, fixing downstream type errors.
     const categoryTotals = subscriptions.reduce((acc, sub) => {
-      acc[sub.category] = (acc[sub.category] || 0) + sub.myShare;
+      if (sub.membershipType === 'monthly') {
+        acc[sub.category] = (acc[sub.category] || 0) + sub.myShare;
+      }
       return acc;
     }, {} as Record<string, number>);
 
@@ -38,14 +37,12 @@ const SubscriptionDonutChart: React.FC<{ subscriptions: MySubscription[] }> = ({
 
   const totalValue = data.reduce((sum, item) => sum + item.value, 0);
   if (totalValue === 0) {
-    return <div className="text-center text-slate-400">No subscription data to display.</div>;
+    return <div className="text-center text-slate-400">No monthly subscription data to display.</div>;
   }
   
   const radius = 80;
   const circumference = 2 * Math.PI * radius;
 
-  // FIX: Cast the initial value of reduce to correctly type the accumulator `acc`.
-  // This resolves type errors in calculating `prevAccumulated` and `accumulatedPercentage`.
   const segmentsData = data.reduce((acc, item) => {
     const percentage = (item.value / totalValue) * 100;
     const prevAccumulated = acc.length > 0 ? acc[acc.length - 1].accumulatedPercentage : 0;
@@ -92,8 +89,9 @@ const SubscriptionDonutChart: React.FC<{ subscriptions: MySubscription[] }> = ({
           })}
         </svg>
          <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-            <span className="text-slate-300 text-sm">Total Bill</span>
-            <span className="text-3xl font-bold text-white">₹{totalValue.toFixed(0)}</span>
+            <span className="text-slate-300 text-sm">Monthly Usage</span>
+            <span className="text-3xl font-bold text-white">{totalValue.toFixed(0)}</span>
+            <span className="text-slate-400 text-xs">Credits</span>
         </div>
       </div>
       <div className="flex flex-col gap-2 text-sm">
@@ -106,7 +104,7 @@ const SubscriptionDonutChart: React.FC<{ subscriptions: MySubscription[] }> = ({
           >
             <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: color }}></span>
             <span className="text-slate-300 mr-2">{category}:</span>
-            <span className="font-semibold text-white">₹{value.toFixed(0)}</span>
+            <span className="font-semibold text-white">{value.toFixed(0)} Credits</span>
           </div>
         ))}
       </div>

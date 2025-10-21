@@ -1,14 +1,17 @@
 import React from 'react';
 import type { Page, DashboardTab, AppState } from '../App';
+import type { User } from '../types';
 
 interface HeaderProps {
   isVisible: boolean;
   page: Page;
+  user: User | null;
   activeDashboardTab: DashboardTab;
   onNavigate: (page: Page, tab?: DashboardTab) => void;
   onLogin: () => void;
   onLogout: () => void;
   onCreateGroup: () => void;
+  onAddCredits: () => void;
   appState: AppState;
 }
 
@@ -20,8 +23,8 @@ const NavLink: React.FC<{onClick: () => void, children: React.ReactNode, isActiv
 );
 
 
-const Header: React.FC<HeaderProps> = ({ isVisible, page, activeDashboardTab, onNavigate, onLogin, onLogout, onCreateGroup, appState }) => {
-  const isLoggedIn = page === 'dashboard' || page === 'profile';
+const Header: React.FC<HeaderProps> = ({ isVisible, page, user, activeDashboardTab, onNavigate, onLogin, onLogout, onCreateGroup, onAddCredits, appState }) => {
+  const isLoggedIn = !!user;
 
   const isMarketplaceActive = page === 'dashboard' && activeDashboardTab === 'explore';
   const isDashboardActive = page === 'dashboard' && activeDashboardTab === 'dashboard';
@@ -59,13 +62,18 @@ const Header: React.FC<HeaderProps> = ({ isVisible, page, activeDashboardTab, on
           </div>
 
           <div className={`hidden md:flex items-center space-x-4 pr-8 transition-all duration-500 ease-out ${contentIsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3'}`}>
-            {isLoggedIn ? (
+            {isLoggedIn && user ? (
                 <>
-                    <button onClick={onCreateGroup} className="bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 px-6 rounded-full transition duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex items-center gap-2">
+                    <button onClick={onAddCredits} className="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-full transition duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-300" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                      </svg>
+                      <span>{user.creditBalance.toLocaleString()} Credits</span>
+                    </button>
+                    <button onClick={onCreateGroup} className="bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 px-4 rounded-full transition duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex items-center gap-2">
                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                         </svg>
-                        Create Group
                     </button>
                     <button onClick={onLogout} className="font-semibold text-slate-300 hover:text-white transition">
                         Logout

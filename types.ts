@@ -11,11 +11,28 @@ export interface SubscriptionGroup {
     name: string;
     rating: number;
   };
+  status: 'active' | 'pending_review' | 'full';
+  credentials?: {
+      username: string;
+      password?: string; // Password should only be sent to members
+  };
+  proof?: string; // e.g., a URL to a screenshot of the receipt
 }
 
 export interface MySubscription extends SubscriptionGroup {
-  nextPaymentDate: string;
+  membershipType: 'monthly' | 'temporary';
   myShare: number;
+  nextPaymentDate?: string;
+  endDate?: string;
+}
+
+export interface User {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string;
+    memberSince: string;
+    creditBalance: number;
 }
 
 export type IconName = 'netflix' | 'spotify' | 'youtube' | 'disney' | 'hbo' | 'office' | 'adobe' | 'canva';

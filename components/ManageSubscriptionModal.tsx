@@ -7,7 +7,16 @@ interface ManageSubscriptionModalProps {
   isOpen: boolean;
   onClose: () => void;
   subscription: MySubscription;
+  onLeaveGroup: (subscriptionId: string, refund: number) => Promise<void>;
 }
+
+const daysBetween = (dateStr1: string, dateStr2: string): number => {
+    const d1 = new Date(dateStr1);
+    const d2 = new Date(dateStr2);
+    d1.setHours(0,0,0,0);
+    d2.setHours(0,0,0,0);
+    return Math.round((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
+};
 
 const Star: React.FC<{ filled: boolean; onClick: () => void; onMouseEnter: () => void; onMouseLeave: () => void }> = ({ filled, onClick, onMouseEnter, onMouseLeave }) => (
   <svg 
@@ -23,18 +32,70 @@ const Star: React.FC<{ filled: boolean; onClick: () => void; onMouseEnter: () =>
   </svg>
 );
 
-const ManageSubscriptionModal: React.FC<ManageSubscriptionModalProps> = ({ isOpen, onClose, subscription }) => {
+const CredentialRow: React.FC<{ label: string; value: string; isPassword?: boolean }> = ({ label, value, isPassword = false }) => {
+  const [isVisible, setIsVisible] = useState(!isPassword);
+  const [copyText, setCopyText] = useState('Copy');
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value);
+    setCopyText('Copied!');
+    setTimeout(() => setCopyText('Copy'), 1500);
+  };
+
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span className="font-semibold text-slate-300">{label}:</span>
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-white bg-black/20 px-2 py-1 rounded">
+          {isVisible ? value : '••••••••••••'}
+        </span>
+        {isPassword && (
+          <button onClick={() => setIsVisible(!isVisible)} className="text-slate-400 hover:text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              {isVisible ? <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" /> : <path d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.367zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM10 18a8 8 0 100-16 8 8 0 000 16z" />}
+            </svg>
+          </button>
+        )}
+        <button onClick={handleCopy} className="text-slate-400 hover:text-white text-xs font-semibold">{copyText}</button>
+      </div>
+    </div>
+  );
+};
+
+
+const ManageSubscriptionModal: React.FC<ManageSubscriptionModalProps> = ({ isOpen, onClose, subscription, onLeaveGroup }) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [isConfirmingLeave, setConfirmingLeave] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleLeaveGroup = () => {
-    // In a real app, this would trigger an API call.
-    // For now, we just close the modal.
-    console.log(`Leaving group ${subscription.name}`);
-    onClose();
+  const calculateRefund = (): number => {
+    if (subscription.membershipType === 'temporary' && subscription.endDate) {
+      const daysRemaining = daysBetween(new Date().toISOString(), subscription.endDate);
+      if (daysRemaining <= 0) return 0;
+      
+      const pricePerSlot = subscription.totalPrice / subscription.slotsTotal;
+      const dailyRate = pricePerSlot / 30; // Assume 30 day cycle for calculation
+      return Math.floor(dailyRate * daysRemaining);
+    }
+    return 0; // No refund for monthly subscriptions in this model
+  };
+
+  const refundAmount = calculateRefund();
+
+  const handleConfirmLeave = async () => {
+    setIsLeaving(true);
+    await onLeaveGroup(subscription.id, refundAmount);
+    setIsLeaving(false);
+  };
+  
+  const leaveMessage = () => {
+    if (refundAmount > 0) {
+      return `You will be refunded ${refundAmount} credits for the remaining time. This action cannot be undone.`;
+    }
+    return `If you leave, you will lose access at the end of the current billing period. This action cannot be undone.`;
   };
 
   return (
@@ -63,26 +124,42 @@ const ManageSubscriptionModal: React.FC<ManageSubscriptionModalProps> = ({ isOpe
             <div className="text-center">
                 <h3 className="text-lg font-semibold text-white mb-2">Are you sure?</h3>
                 <p className="text-slate-400 mb-6">
-                    If you leave, your final share for the current billing cycle will be calculated and added to your next bill. This action cannot be undone.
+                  {leaveMessage()}
                 </p>
                 <div className="flex justify-center gap-4">
                     <button 
                         onClick={() => setConfirmingLeave(false)}
                         className="font-semibold py-2 px-6 rounded-xl transition duration-300 bg-white/10 hover:bg-white/20 text-white"
+                        disabled={isLeaving}
                     >
                         Cancel
                     </button>
                     <button 
-                        onClick={handleLeaveGroup}
-                        className="font-bold py-2 px-6 rounded-xl transition duration-300 bg-red-600 hover:bg-red-500 text-white"
+                        onClick={handleConfirmLeave}
+                        className="font-bold py-2 px-6 rounded-xl transition duration-300 bg-red-600 hover:bg-red-500 text-white flex items-center justify-center min-w-[120px]"
+                        disabled={isLeaving}
                     >
-                        Confirm & Leave
+                        {isLeaving ? 'Leaving...' : 'Confirm & Leave'}
                     </button>
                 </div>
             </div>
         ) : (
-            <>
-                <div className="mb-8 p-4 bg-black/20 rounded-lg">
+            <div className="space-y-6">
+                <div className="p-4 bg-black/20 rounded-lg">
+                  <h3 className="text-lg font-semibold text-white mb-3">Access Credentials</h3>
+                  <div className="space-y-2">
+                    {subscription.credentials?.username ? (
+                      <>
+                        <CredentialRow label="Username" value={subscription.credentials.username} />
+                        <CredentialRow label="Password" value={subscription.credentials.password || ''} isPassword />
+                      </>
+                    ) : (
+                      <p className="text-slate-400 text-center text-sm">Credentials are not available for this group.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-4 bg-black/20 rounded-lg">
                     <h3 className="text-lg font-semibold text-center text-white mb-3">Rate Group Manager</h3>
                     <div className="flex justify-center" onMouseLeave={() => setHoverRating(0)}>
                     {[...Array(5)].map((_, i) => (
@@ -91,7 +168,7 @@ const ManageSubscriptionModal: React.FC<ManageSubscriptionModalProps> = ({ isOpe
                             filled={(hoverRating || rating) > i}
                             onClick={() => setRating(i + 1)}
                             onMouseEnter={() => setHoverRating(i + 1)}
-                            // FIX: Added the required 'onMouseLeave' prop to handle resetting the hover state.
+                            // FIX: Add onMouseLeave to each Star to reset hover state.
                             onMouseLeave={() => setHoverRating(0)}
                         />
                     ))}
@@ -107,7 +184,7 @@ const ManageSubscriptionModal: React.FC<ManageSubscriptionModalProps> = ({ isOpe
                         Leave Group
                     </button>
                 </div>
-            </>
+            </div>
         )}
       </GlassmorphicCard>
     </div>

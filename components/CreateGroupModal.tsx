@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import GlassmorphicCard from './GlassmorphicCard';
 import CustomSelect from './CustomSelect';
+import type { SubscriptionGroup, IconName } from '../types';
 
 interface CreateGroupModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onCreateGroup: (groupData: Omit<SubscriptionGroup, 'id' | 'postedBy' | 'slotsFilled' | 'status'>) => Promise<void>;
 }
 
-const services = [
+const services: { value: IconName, label: string }[] = [
     { value: 'netflix', label: 'Netflix' },
     { value: 'spotify', label: 'Spotify' },
     { value: 'youtube', label: 'YouTube' },
     { value: 'disney', label: 'Disney+' },
     { value: 'hbo', label: 'HBO Max' },
-    { value: 'office', label: 'Microsoft 365' },
+    { value: 'office', label: 'Microsoft 35' },
     { value: 'adobe', label: 'Adobe CC' },
     { value: 'canva', label: 'Canva' },
 ];
@@ -30,15 +32,20 @@ const FormInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label:
 );
 
 
-const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose }) => {
+const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, onCreateGroup }) => {
   const [formState, setFormState] = useState({
-      service: 'netflix',
+      icon: 'netflix' as IconName,
       name: '',
       totalPrice: '',
       slotsTotal: '',
-      category: 'Video',
-      tags: ''
+      // FIX: Explicitly type `category` to match the required union type.
+      category: 'Video' as 'Video' | 'Music' | 'Productivity' | 'Design',
+      tags: '',
+      username: '',
+      password: '',
+      proof: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
@@ -47,15 +54,30 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose }) 
       setFormState(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSelectChange = (name: string, value: string) => {
-      setFormState(prev => ({ ...prev, [name]: value }));
+  // FIX: Create a type-safe handler for select inputs to maintain correct types.
+  const handleSelectChange = (name: 'icon' | 'category', value: string) => {
+      if (name === 'category') {
+          setFormState(prev => ({ ...prev, category: value as 'Video' | 'Music' | 'Productivity' | 'Design' }));
+      } else {
+          setFormState(prev => ({ ...prev, icon: value as IconName }));
+      }
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      // In a real app, this would submit the form data
-      console.log('Creating group:', formState);
-      onClose();
+      setIsSubmitting(true);
+      const groupData = {
+          ...formState,
+          totalPrice: parseInt(formState.totalPrice),
+          slotsTotal: parseInt(formState.slotsTotal),
+          tags: formState.tags.split(',').map(tag => tag.trim()),
+          credentials: {
+              username: formState.username,
+              password: formState.password,
+          }
+      };
+      await onCreateGroup(groupData);
+      setIsSubmitting(false);
   };
 
   return (
@@ -74,17 +96,28 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose }) 
         <h2 className="text-2xl font-bold text-white mb-6 text-center">Create a New Group</h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="p-3 bg-sky-500/10 border border-sky-500/30 rounded-lg text-center text-sky-200 text-sm">
+                Your group will be pending review by an admin before it appears in the marketplace.
+            </div>
+
             <CustomSelect 
               label="Service"
               options={services}
-              value={formState.service}
-              onChange={(value) => handleSelectChange('service', value)}
+              value={formState.icon}
+              onChange={(value) => handleSelectChange('icon', value)}
             />
             <FormInput label="Group Name (e.g. Netflix Premium Family)" name="name" type="text" placeholder="My Awesome Netflix Group" value={formState.name} onChange={handleInputChange} required />
             <div className="grid grid-cols-2 gap-4">
-                <FormInput label="Total Monthly Price (₹)" name="totalPrice" type="number" placeholder="1660" value={formState.totalPrice} onChange={handleInputChange} required />
+                <FormInput label="Total Monthly Price (Credits)" name="totalPrice" type="number" placeholder="1660" value={formState.totalPrice} onChange={handleInputChange} required />
                 <FormInput label="Total Slots (including you)" name="slotsTotal" type="number" placeholder="4" value={formState.slotsTotal} onChange={handleInputChange} required />
             </div>
+
+            <h3 className="text-lg font-semibold text-white pt-2">Subscription Credentials</h3>
+            <FormInput label="Username / Email" name="username" type="text" placeholder="user@example.com" value={formState.username} onChange={handleInputChange} required />
+            <FormInput label="Password" name="password" type="password" placeholder="••••••••••••" value={formState.password} onChange={handleInputChange} required />
+            <FormInput label="Proof of Subscription (e.g., Imgur link to receipt)" name="proof" type="url" placeholder="https://imgur.com/your-proof" value={formState.proof} onChange={handleInputChange} required />
+            
+            <h3 className="text-lg font-semibold text-white pt-2">Group Details</h3>
              <CustomSelect 
                label="Category"
                options={categories}
@@ -98,14 +131,16 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose }) 
                     type="button"
                     onClick={onClose}
                     className="font-semibold py-2 px-6 rounded-xl transition duration-300 bg-white/10 hover:bg-white/20 text-white"
+                    disabled={isSubmitting}
                 >
                     Cancel
                 </button>
                 <button 
                     type="submit"
-                    className="font-bold py-2 px-6 rounded-xl transition duration-300 bg-sky-500 hover:bg-sky-400 text-white"
+                    className="font-bold py-2 px-6 rounded-xl transition duration-300 bg-sky-500 hover:bg-sky-400 text-white min-w-[150px]"
+                    disabled={isSubmitting}
                 >
-                    Create Group
+                    {isSubmitting ? 'Submitting...' : 'Submit for Review'}
                 </button>
             </div>
         </form>

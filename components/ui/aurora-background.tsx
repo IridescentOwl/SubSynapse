@@ -1,15 +1,15 @@
-import { cn } from '../../lib/utils';
+import { cn } from '../../lib/utils.ts';
 import React, { ReactNode } from "react";
 
 interface AuroraBackgroundProps extends React.HTMLProps<HTMLDivElement> {
   children: ReactNode;
   showRadialGradient?: boolean;
+  className?: string;
 }
 
-// FIX: Refactored props handling to resolve TypeScript error with `className`.
-// `className` is now safely accessed from `props` and correctly merged.
 export const AuroraBackground = ({
   children,
+  className,
   showRadialGradient = true,
   ...props
 }: AuroraBackgroundProps) => {
@@ -17,10 +17,11 @@ export const AuroraBackground = ({
     <div
       {...props}
       className={cn(
-        "relative min-h-screen bg-zinc-900 text-slate-50 transition-bg",
-        props.className
+        "relative min-h-screen text-slate-50 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800",
+        className
       )}
     >
+      {/* Aurora animation layer */}
       <div className="absolute inset-0 overflow-hidden">
         <div
           className={cn(
@@ -33,15 +34,24 @@ export const AuroraBackground = ({
             filter blur-[10px] invert-0
             after:content-[""] after:absolute after:inset-0 after:[background-image:var(--dark-gradient),var(--aurora)]
             after:[background-size:200%,_100%] 
-            after:animate-[aurora_60s_linear_infinite] after:[background-attachment:fixed] after:mix-blend-difference
+            motion-safe:after:animate-[aurora_120s_linear_infinite] motion-reduce:after:animate-none after:[background-attachment:fixed] after:mix-blend-difference
             pointer-events-none
-            absolute -inset-[10px] opacity-40 will-change-transform`,
+            absolute -inset-[10px] opacity-25 will-change-transform`,
 
             showRadialGradient &&
               `[mask-image:radial-gradient(ellipse_at_100%_0%,black_10%,var(--transparent)_70%)]`
           )}
         ></div>
       </div>
+      
+      {/* Subtle overlay for better content readability */}
+      <div className="absolute inset-0 bg-slate-900/5 backdrop-blur-[0.5px] z-20" />
+      
+      {/* Content layer */}
+      <div className="relative z-30 pattern-dots">
+        {children}
+      </div>
+      
       {/* This style block is necessary to define the CSS variables for the gradient colors. */}
       <style>{`
         @property --purple { syntax: "<color>"; initial-value: #9333ea; inherits: false; }
@@ -52,7 +62,6 @@ export const AuroraBackground = ({
         @property --black { syntax: "<color>"; initial-value: #000; inherits: false; }
         @property --transparent { syntax: "<color>"; initial-value: transparent; inherits: false; }
       `}</style>
-      {children}
     </div>
   );
 };

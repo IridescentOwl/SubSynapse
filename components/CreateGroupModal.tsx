@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import GlassmorphicCard from './GlassmorphicCard';
-import CustomSelect from './CustomSelect';
-import type { SubscriptionGroup, IconName } from '../types';
+import GlassmorphicCard from './GlassmorphicCard.tsx';
+import CustomSelect from './CustomSelect.tsx';
+import type { SubscriptionGroup, IconName } from '../types.ts';
 
 interface CreateGroupModalProps {
   isOpen: boolean;
@@ -38,7 +38,6 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
       name: '',
       totalPrice: '',
       slotsTotal: '',
-      // FIX: Explicitly type `category` to match the required union type.
       category: 'Video' as 'Video' | 'Music' | 'Productivity' | 'Design',
       tags: '',
       username: '',
@@ -54,7 +53,6 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
       setFormState(prev => ({ ...prev, [name]: value }));
   };
 
-  // FIX: Create a type-safe handler for select inputs to maintain correct types.
   const handleSelectChange = (name: 'icon' | 'category', value: string) => {
       if (name === 'category') {
           setFormState(prev => ({ ...prev, category: value as 'Video' | 'Music' | 'Productivity' | 'Design' }));

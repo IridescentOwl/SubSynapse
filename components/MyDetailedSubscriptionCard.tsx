@@ -1,15 +1,8 @@
 import React from 'react';
-import GlassmorphicCard from './GlassmorphicCard';
-import Icon from './Icon';
-import type { MySubscription } from '../types';
-
-const daysBetween = (dateStr1: string, dateStr2: string): number => {
-    const d1 = new Date(dateStr1);
-    const d2 = new Date(dateStr2);
-    d1.setHours(0,0,0,0);
-    d2.setHours(0,0,0,0);
-    return Math.round((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
-};
+import GlassmorphicCard from './GlassmorphicCard.tsx';
+import Icon from './Icon.tsx';
+import type { MySubscription } from '../types.ts';
+import { daysBetween } from '../lib/utils.ts';
 
 interface MyDetailedSubscriptionCardProps {
     sub: MySubscription;
@@ -18,7 +11,6 @@ interface MyDetailedSubscriptionCardProps {
 }
 
 const MyDetailedSubscriptionCard: React.FC<MyDetailedSubscriptionCardProps> = ({ sub, animationDelay, onManageClick }) => {
-    // FIX: Add `slotsTotal` to the destructuring assignment.
     const { name, icon, myShare, nextPaymentDate, endDate, membershipType, slotsFilled, slotsTotal, postedBy } = sub;
     const [isProgressBarLoaded, setIsProgressBarLoaded] = React.useState(false);
 

@@ -1,91 +1,84 @@
 import React from 'react';
-import type { IconName } from '../types';
+import type { IconName } from '../types.ts';
 
 interface IconProps {
   name: IconName;
   className?: string;
 }
 
-const GlassmorphicIconWrapper: React.FC<{ outlineColor: string; children: React.ReactNode; className?: string }> = ({ outlineColor, children, className }) => (
-    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <filter id="glass-blur" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="0.5" />
-            </filter>
-        </defs>
-        <g stroke="white" strokeWidth="1.5" filter="url(#glass-blur)" strokeOpacity="0.3">{children}</g>
-        <g stroke={outlineColor} strokeWidth="1">{children}</g>
-    </svg>
-);
+const ICON_MAP: Record<IconName, string> = {
+  netflix: '/assets/svg icons/netflix.svg',
+  spotify: '/assets/svg icons/spotify.svg',
+  youtube: '/assets/svg icons/youtube.svg',
+  hbo: '/assets/svg icons/hbo.svg',
+  chatgpt: '/assets/svg icons/chatgpt.svg',
+  google: '/assets/svg icons/google.svg',
+  swiggy: '/assets/svg icons/swiggy.svg',
+  zomato: '/assets/svg icons/zomato.svg',
+  applemusic: '/assets/svg icons/applemusic.svg',
+  claude: '/assets/svg icons/claude.svg',
+  figma: '/assets/svg icons/figma.svg',
+  adonisjs: '/assets/svg icons/adonisjs.svg',
+  perplexity: '/assets/svg icons/perplexity.svg',
+  protonvpn: '/assets/svg icons/protonvpn.svg',
+  steam: '/assets/svg icons/steam.svg',
+  warp: '/assets/svg icons/warp.svg'
+};
 
-const NetflixIcon: React.FC<{className?: string}> = ({className}) => (
-    <GlassmorphicIconWrapper outlineColor="#E50914" className={className}>
-      <path d="M8.5 18L5.5 6H7.5L10.5 18H8.5Z" strokeLinejoin="round"/>
-      <path d="M15.5 18L18.5 6H16.5L13.5 18H15.5Z" strokeLinejoin="round"/>
-      <path d="M12 18V6" />
-    </GlassmorphicIconWrapper>
-);
-const SpotifyIcon: React.FC<{className?: string}> = ({className}) => (
-    <GlassmorphicIconWrapper outlineColor="#1DB954" className={className}>
-      <path d="M6 15C9.86599 13.8266 14.134 13.8266 18 15" strokeLinecap="round"/>
-      <path d="M6.5 12C9.96587 11.0503 13.5341 11.0503 17 12" strokeLinecap="round"/>
-      <path d="M7 9C10.0965 8.28312 12.9035 8.28312 16 9" strokeLinecap="round"/>
-    </GlassmorphicIconWrapper>
-);
-const YoutubeIcon: React.FC<{className?: string}> = ({className}) => (
-    <GlassmorphicIconWrapper outlineColor="#FF0000" className={className}>
-        <rect x="3" y="6" width="18" height="12" rx="3" />
-        <path d="M10 10L14 12L10 14V10Z" strokeLinejoin="round" />
-    </GlassmorphicIconWrapper>
-);
-const DisneyIcon: React.FC<{className?: string}> = ({className}) => (
-    <GlassmorphicIconWrapper outlineColor="#A6DFF1" className={className}>
-        <path d="M4 8.25C12 4 20 4 20 8.25" strokeLinecap="round"/>
-        <path d="M11 10C9.5 8.5 7 8.5 5.5 10" strokeLinecap="round"/>
-    </GlassmorphicIconWrapper>
-);
-const HboIcon: React.FC<{className?: string}> = ({className}) => (
-    <GlassmorphicIconWrapper outlineColor="#9333EA" className={className}>
-        <path d="M5 18V6H8V18H5Z"/>
-        <path d="M16 18V6H19V18H16Z"/>
-        <circle cx="12" cy="12" r="2.5"/>
-    </GlassmorphicIconWrapper>
-);
-const OfficeIcon: React.FC<{className?: string}> = ({className}) => (
-    <GlassmorphicIconWrapper outlineColor="#D83B01" className={className}>
-        <path d="M6 8V20H18V13L13 8H6Z" strokeLinejoin="round"/>
-        <path d="M13 8V13H18" strokeLinejoin="round"/>
-    </GlassmorphicIconWrapper>
-);
-const AdobeIcon: React.FC<{className?: string}> = ({className}) => (
-    <GlassmorphicIconWrapper outlineColor="#FF0000" className={className}>
-        <path d="M9 21L2 3H5L12 17L19 3H22L15 21H9Z" strokeLinejoin="round" />
-    </GlassmorphicIconWrapper>
-);
-const CanvaIcon: React.FC<{className?: string}> = ({className}) => (
-    <GlassmorphicIconWrapper outlineColor="#00C4CC" className={className}>
-      <circle cx="12" cy="12" r="8"/>
-      <circle cx="12" cy="12" r="4"/>
-    </GlassmorphicIconWrapper>
-);
-
-const ICONS: Record<IconName, React.FC<{className?: string}>> = {
-  netflix: NetflixIcon,
-  spotify: SpotifyIcon,
-  youtube: YoutubeIcon,
-  disney: DisneyIcon,
-  hbo: HboIcon,
-  office: OfficeIcon,
-  adobe: AdobeIcon,
-  canva: CanvaIcon
+// Neon color mapping for each service
+const NEON_COLORS: Record<IconName, { glow: string; shadow: string }> = {
+  netflix: { glow: '#E50914', shadow: 'rgba(229, 9, 20, 0.6)' },
+  spotify: { glow: '#1DB954', shadow: 'rgba(29, 185, 84, 0.6)' },
+  youtube: { glow: '#FF0000', shadow: 'rgba(255, 0, 0, 0.6)' },
+  hbo: { glow: '#8B5CF6', shadow: 'rgba(139, 92, 246, 0.6)' },
+  adobe: { glow: '#FF0000', shadow: 'rgba(255, 0, 0, 0.6)' },
+  amazon: { glow: '#FF9900', shadow: 'rgba(255, 153, 0, 0.6)' },
+  'apple-music': { glow: '#FA2D48', shadow: 'rgba(250, 45, 72, 0.6)' },
+  chatgpt: { glow: '#00A67E', shadow: 'rgba(0, 166, 126, 0.6)' },
+  google: { glow: '#4285F4', shadow: 'rgba(66, 133, 244, 0.6)' },
+  swiggy: { glow: '#FC8019', shadow: 'rgba(252, 128, 25, 0.6)' },
+  zomato: { glow: '#E23744', shadow: 'rgba(226, 55, 68, 0.6)' }
 };
 
 const Icon: React.FC<IconProps> = ({ name, className = 'w-6 h-6' }) => {
-  const IconComponent = ICONS[name];
-  if (!IconComponent) {
-    return null; // or a default icon
+  const iconSrc = ICON_MAP[name];
+  const colors = NEON_COLORS[name];
+  
+  if (!iconSrc || !colors) {
+    return <div className={`bg-slate-700 rounded ${className}`}></div>;
   }
-  return <IconComponent className={className} />;
+
+  return (
+    <div className={`${className} relative group cursor-pointer transition-all duration-300 hover:scale-110`}>
+      {/* Neon glow effect */}
+      <div 
+        className="absolute inset-0 blur-md opacity-70 group-hover:opacity-100 transition-all duration-300 group-hover:blur-lg"
+        style={{
+          background: `radial-gradient(circle, ${colors.shadow} 0%, transparent 70%)`,
+          filter: `drop-shadow(0 0 10px ${colors.glow}) drop-shadow(0 0 20px ${colors.glow}) drop-shadow(0 0 30px ${colors.glow})`
+        }}
+      />
+      
+      {/* Main icon */}
+      <img 
+        src={iconSrc} 
+        alt={`${name} logo`} 
+        className="relative z-10 w-full h-full object-contain filter brightness-110 contrast-110 group-hover:brightness-125 transition-all duration-300"
+        style={{
+          filter: `brightness(1.1) contrast(1.1) drop-shadow(0 0 5px ${colors.glow}) drop-shadow(0 0 10px ${colors.shadow})`
+        }}
+      />
+      
+      {/* Additional outer glow on hover */}
+      <div 
+        className="absolute inset-0 opacity-0 group-hover:opacity-60 transition-all duration-500 pointer-events-none"
+        style={{
+          background: `radial-gradient(circle, transparent 30%, ${colors.shadow} 60%, transparent 90%)`,
+          filter: `blur(20px)`
+        }}
+      />
+    </div>
+  );
 };
 
 export default Icon;

@@ -2,8 +2,8 @@
 // HTTP requests to your backend. For this demo, it simulates async operations
 // and manages data in memory.
 
-import type { User, SubscriptionGroup, MySubscription } from '../types';
-import { MOCK_USERS, MOCK_GROUPS, MOCK_MEMBERSHIPS, MOCK_WITHDRAWAL_REQUESTS } from './mock-db';
+import type { User, SubscriptionGroup, MySubscription } from '../types.ts';
+import { MOCK_USERS, MOCK_GROUPS, MOCK_MEMBERSHIPS, MOCK_WITHDRAWAL_REQUESTS } from './mock-db.ts';
 
 let users = [...MOCK_USERS];
 let groups = [...MOCK_GROUPS];

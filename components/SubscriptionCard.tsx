@@ -1,7 +1,7 @@
 import React from 'react';
-import GlassmorphicCard from './GlassmorphicCard';
-import Icon from './Icon';
-import type { SubscriptionGroup } from '../types';
+import GlassmorphicCard from './GlassmorphicCard.tsx';
+import Icon from './Icon.tsx';
+import type { SubscriptionGroup } from '../types.ts';
 
 interface SubscriptionCardProps {
   group: SubscriptionGroup;

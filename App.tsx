@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AuroraBackground } from './components/ui/aurora-background';
-import Header from './components/Header';
-import HomePage from './HomePage';
-import DashboardPage from './DashboardPage';
-import ProfilePage from './ProfilePage';
-import ManageSubscriptionModal from './components/ManageSubscriptionModal';
-import CreateGroupModal from './components/CreateGroupModal';
-import JoinGroupModal from './components/JoinGroupModal';
-import AddCreditsModal from './components/AddCreditsModal';
-import AuthModal from './components/AuthModal';
-import WithdrawCreditsModal from './components/WithdrawCreditsModal';
-import type { MySubscription, SubscriptionGroup } from './types';
-import { useAuth } from './AuthContext';
-import * as api from './services/api';
+import { AuroraBackground } from './components/ui/aurora-background.tsx';
+import Header from './components/Header.tsx';
+import HomePage from './HomePage.tsx';
+import DashboardPage from './DashboardPage.tsx';
+import ProfilePage from './ProfilePage.tsx';
+import ManageSubscriptionModal from './components/ManageSubscriptionModal.tsx';
+import CreateGroupModal from './components/CreateGroupModal.tsx';
+import JoinGroupModal from './components/JoinGroupModal.tsx';
+import AddCreditsModal from './components/AddCreditsModal.tsx';
+import AuthModal from './components/AuthModal.tsx';
+import WithdrawCreditsModal from './components/WithdrawCreditsModal.tsx';
+import type { MySubscription, SubscriptionGroup } from './types.ts';
+import { useAuth } from './AuthContext.tsx';
+import * as api from './services/api.ts';
 
 
 export type Page = 'home' | 'dashboard' | 'profile';
@@ -23,9 +23,9 @@ function App() {
   const [page, setPage] = useState<Page>('home');
   const [activeDashboardTab, setActiveDashboardTab] = useState<DashboardTab>('explore');
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
-  const [appState, setAppState] = useState<AppState>('loading');
+  const [isReady, setIsReady] = useState(false);
   
-  const { user, mySubscriptions, isAuthenticated, addCredits, joinGroup, leaveGroup, createGroup, requestWithdrawal, syncUserData, changePassword, updateProfilePicture } = useAuth();
+  const { user, mySubscriptions, isAuthenticated, addCredits, joinGroup, leaveGroup, createGroup, requestWithdrawal, syncUserData, changePassword, updateProfilePicture, logout } = useAuth();
 
   // Modal States
   const [isManageModalOpen, setManageModalOpen] = useState(false);
@@ -40,18 +40,15 @@ function App() {
   const lastScrollY = useRef(0);
 
   useEffect(() => {
-    const timer1 = setTimeout(() => setAppState('panning'), 1200);
-    const timer2 = setTimeout(() => setAppState('finished'), 2200);
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-    };
+    // Start content animations immediately after mount
+    const timer = setTimeout(() => setIsReady(true), 100);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      if (appState === 'finished') {
+      if (isReady) {
         if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
           setIsHeaderVisible(false);
         } else {
@@ -62,7 +59,7 @@ function App() {
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [appState]);
+  }, [isReady]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -76,7 +73,6 @@ function App() {
   }, [isAuthenticated, page]);
 
   const handleLogout = () => {
-    const { logout } = useAuth();
     logout();
     setPage('home');
     window.scrollTo(0, 0);
@@ -168,13 +164,12 @@ function App() {
                       /> : null;
       case 'home':
       default:
-        return <HomePage onLogin={() => setAuthModalOpen(true)} isReady={appState === 'finished'} />;
+        return <HomePage onLogin={() => setAuthModalOpen(true)} isReady={isReady} />;
     }
   };
 
   return (
     <AuroraBackground>
-      <div className="relative z-10">
         <Header 
           isVisible={isHeaderVisible}
           page={isAuthenticated ? page : 'home'}
@@ -183,12 +178,10 @@ function App() {
           onNavigate={handleNavigate}
           onLogin={() => setAuthModalOpen(true)}
           onLogout={handleLogout}
-          appState={appState}
           onCreateGroup={handleOpenCreateGroupModal}
           onAddCredits={() => setAddCreditsModalOpen(true)}
         />
-        {appState !== 'loading' && renderPage()}
-      </div>
+        {renderPage()}
       {selectedSubscription && (
         <ManageSubscriptionModal 
           isOpen={isManageModalOpen}

@@ -27,13 +27,13 @@ const GlassmorphicCard: React.FC<GlassmorphicCardProps> = ({
   }, [hasAnimation, isReady, animationDelay]);
   
   const animationClasses = hasAnimation 
-    ? `transition-all duration-700 ease-out ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}` 
+    ? `transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${isLoaded ? 'opacity-100 translate-y-0 scale-100 rotate-0' : 'opacity-0 translate-y-8 scale-95 -rotate-1'}` 
     : '';
 
   return (
     <div 
       {...props}
-      className={`bg-black/20 backdrop-blur-lg rounded-2xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:ring-1 hover:ring-white/20 pointer-events-auto ${animationClasses} ${className}`}
+      className={`bg-black/20 backdrop-blur-lg rounded-2xl shadow-lg border border-white/10 transition-all duration-500 ease-out hover:shadow-2xl hover:shadow-sky-500/10 hover:ring-1 hover:ring-sky-400/30 hover:scale-[1.02] hover:bg-black/30 hover:border-sky-400/20 pointer-events-auto ${animationClasses} ${className}`}
     >
       {children}
     </div>

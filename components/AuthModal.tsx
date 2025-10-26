@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import GlassmorphicCard from './GlassmorphicCard';
-import { useAuth } from '../AuthContext';
+import GlassmorphicCard from './GlassmorphicCard.tsx';
+import { useAuth } from '../AuthContext.tsx';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -72,35 +72,32 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           )
       }
       
+      const isLoginView = view === 'login';
+      const isRegisterView = view === 'register';
+      const isForgotPasswordView = view === 'forgotPassword';
+
       return (
         <>
             <div className="flex justify-center mb-6 border-b border-white/10">
-                <button onClick={() => handleViewChange('login')} className={`px-6 py-2 text-lg font-semibold transition-colors ${view === 'login' ? 'text-sky-300 border-b-2 border-sky-300' : 'text-slate-400'}`}>Login</button>
-                <button onClick={() => handleViewChange('register')} className={`px-6 py-2 text-lg font-semibold transition-colors ${view === 'register' ? 'text-sky-300 border-b-2 border-sky-300' : 'text-slate-400'}`}>Sign Up</button>
+                <button onClick={() => handleViewChange('login')} className={`px-6 py-2 text-lg font-semibold transition-colors ${isLoginView ? 'text-sky-300 border-b-2 border-sky-300' : 'text-slate-400'}`}>Login</button>
+                <button onClick={() => handleViewChange('register')} className={`px-6 py-2 text-lg font-semibold transition-colors ${isRegisterView ? 'text-sky-300 border-b-2 border-sky-300' : 'text-slate-400'}`}>Sign Up</button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
-                {view === 'register' && (
+                {isRegisterView && (
                     <FormInput label="Full Name" name="name" type="text" placeholder="Alex Doe" value={formState.name} onChange={handleInputChange} required />
                 )}
-                {view !== 'login' || (
-                    <>
-                        <FormInput label="Email Address" name="email" type="email" placeholder="alex.doe@example.com" value={formState.email} onChange={handleInputChange} required />
-                        <FormInput label="Password" name="password" type="password" placeholder="••••••••••••" value={formState.password} onChange={handleInputChange} required />
-                    </>
+                
+                {(isLoginView || isRegisterView || isForgotPasswordView) && (
+                     <FormInput label="Email Address" name="email" type="email" placeholder="alex.doe@example.com" value={formState.email} onChange={handleInputChange} required />
                 )}
-                {view === 'register' && (
-                    <>
-                        <FormInput label="Email Address" name="email" type="email" placeholder="alex.doe@example.com" value={formState.email} onChange={handleInputChange} required />
-                        <FormInput label="Password" name="password" type="password" placeholder="••••••••••••" value={formState.password} onChange={handleInputChange} required />
-                    </>
-                )}
-                 {view === 'forgotPassword' && (
-                    <FormInput label="Email Address" name="email" type="email" placeholder="Enter your email to reset password" value={formState.email} onChange={handleInputChange} required />
+
+                {(isLoginView || isRegisterView) && (
+                    <FormInput label="Password" name="password" type="password" placeholder="••••••••••••" value={formState.password} onChange={handleInputChange} required />
                 )}
 
                 {error && <p className="text-sm text-red-400 text-center">{error}</p>}
 
-                 {view === 'login' && (
+                 {isLoginView && (
                     <div className="text-right">
                         <button type="button" onClick={() => handleViewChange('forgotPassword')} className="text-sm text-slate-400 hover:text-sky-300 transition">Forgot Password?</button>
                     </div>
@@ -113,18 +110,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                         disabled={isLoading}
                     >
                         {isLoading ? 'Processing...' : 
-                            view === 'login' ? 'Login' :
-                            view === 'register' ? 'Create Account' :
+                            isLoginView ? 'Login' :
+                            isRegisterView ? 'Create Account' :
                             'Send Reset Link'
                         }
                     </button>
                 </div>
-                {view !== 'forgotPassword' && (
+                {!isForgotPasswordView && (
                     <p className="text-xs text-slate-400 text-center pt-2">
                         By continuing, you agree to our Terms of Service.
                     </p>
                 )}
-                {view === 'forgotPassword' && (
+                {isForgotPasswordView && (
                     <div className="text-center pt-2">
                          <button type="button" onClick={() => handleViewChange('login')} className="text-sm text-slate-400 hover:text-sky-300 transition">&larr; Back to Login</button>
                     </div>

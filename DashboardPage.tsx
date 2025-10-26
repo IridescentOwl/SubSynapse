@@ -1,12 +1,12 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import SubscriptionCard from './components/SubscriptionCard';
-import GlassmorphicCard from './components/GlassmorphicCard';
-import type { SubscriptionGroup, MySubscription } from './types';
-import MyDetailedSubscriptionCard from './components/MyDetailedSubscriptionCard';
-import type { DashboardTab } from './App';
-import SubscriptionDonutChart from './components/SubscriptionDonutChart';
-import CustomSelect from './components/CustomSelect';
-import * as api from './services/api';
+import SubscriptionCard from './components/SubscriptionCard.tsx';
+import GlassmorphicCard from './components/GlassmorphicCard.tsx';
+import type { SubscriptionGroup, MySubscription } from './types.ts';
+import MyDetailedSubscriptionCard from './components/MyDetailedSubscriptionCard.tsx';
+import type { DashboardTab } from './App.tsx';
+import SubscriptionDonutChart from './components/SubscriptionDonutChart.tsx';
+import CustomSelect from './components/CustomSelect.tsx';
+import * as api from './services/api.ts';
 
 const useCountUp = (end: number, duration: number = 1500) => {
   const [count, setCount] = useState(0);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { MySubscription } from '../types';
+import type { MySubscription } from '../types.ts';
 
 interface ChartData {
   category: string;
@@ -32,7 +32,8 @@ const SubscriptionDonutChart: React.FC<{ subscriptions: MySubscription[] }> = ({
         color: CATEGORY_COLORS[category] || '#94a3b8', // slate-400 for fallback
       }));
 
-    return mappedData.sort((a, b) => b.value - a.value);
+    // FIX: Explicitly cast values to Number to satisfy the TypeScript compiler for the arithmetic operation.
+    return mappedData.sort((a, b) => Number(b.value) - Number(a.value));
   }, [subscriptions]);
 
   const totalValue = data.reduce((sum, item) => sum + item.value, 0);
@@ -79,11 +80,11 @@ const SubscriptionDonutChart: React.FC<{ subscriptions: MySubscription[] }> = ({
                 onMouseEnter={() => setHoveredCategory(category)}
                 onMouseLeave={() => setHoveredCategory(null)}
                 className={`transition-all duration-300 ease-out ${hoveredCategory && !isHovered ? 'opacity-30' : 'opacity-100'}`}
-                style={{ 
-                    transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+                style={{
+                    // FIX: Explicitly cast style object to React.CSSProperties to fix misleading arithmetic type error.
+                    transform: `rotate(${rotation}deg) scale(${isHovered ? 1.05 : 1})`,
                     transformOrigin: 'center',
-                    rotate: `${rotation}deg`
-                }}
+                } as React.CSSProperties}
               />
             );
           })}

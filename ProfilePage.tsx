@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import GlassmorphicCard from './components/GlassmorphicCard';
-import type { User } from './types';
+import GlassmorphicCard from './components/GlassmorphicCard.tsx';
+import type { User } from './types.ts';
 
 const useCountUp = (end: number, duration: number = 1500) => {
   const [count, setCount] = useState(0);

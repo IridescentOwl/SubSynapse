@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import GlassmorphicCard from './GlassmorphicCard';
+import GlassmorphicCard from './GlassmorphicCard.tsx';
 
 interface WithdrawCreditsModalProps {
   isOpen: boolean;

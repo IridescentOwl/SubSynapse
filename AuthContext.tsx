@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import type { User, MySubscription, SubscriptionGroup } from './types';
-import * as api from './services/api';
+import type { User, MySubscription, SubscriptionGroup } from './types.ts';
+import * as api from './services/api.ts';
 
 interface AuthContextType {
   user: User | null;

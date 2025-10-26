@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import GlassmorphicCard from './GlassmorphicCard';
+import GlassmorphicCard from './GlassmorphicCard.tsx';
 
 declare var QRCode: any;
 
@@ -20,7 +20,6 @@ const AddCreditsModal: React.FC<AddCreditsModalProps> = ({ isOpen, onClose, onAd
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [countdown, setCountdown] = useState(120);
   const qrCodeRef = useRef<HTMLDivElement>(null);
-  // FIX: Use `number` for browser environment's `setInterval` return type and initialize useRef with null.
   const timerRef = useRef<number | null>(null);
 
   const finalAmount = customAmount ? parseInt(customAmount) : amount;

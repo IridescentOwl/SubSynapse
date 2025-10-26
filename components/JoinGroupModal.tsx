@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import GlassmorphicCard from './GlassmorphicCard';
-import Icon from './Icon';
-import type { SubscriptionGroup, MySubscription } from '../types';
+import GlassmorphicCard from './GlassmorphicCard.tsx';
+import Icon from './Icon.tsx';
+import type { SubscriptionGroup, MySubscription } from '../types.ts';
+import CredentialRow from './CredentialRow.tsx';
 
 interface JoinGroupModalProps {
   isOpen: boolean;
@@ -11,37 +12,6 @@ interface JoinGroupModalProps {
   onConfirmJoin: (subscription: MySubscription, cost: number) => Promise<void>;
   onAddCredits: () => void;
 }
-
-const CredentialRow: React.FC<{ label: string; value: string; isPassword?: boolean }> = ({ label, value, isPassword = false }) => {
-  const [isVisible, setIsVisible] = useState(!isPassword);
-  const [copyText, setCopyText] = useState('Copy');
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(value);
-    setCopyText('Copied!');
-    setTimeout(() => setCopyText('Copy'), 1500);
-  };
-
-  return (
-    <div className="flex items-center justify-between text-sm p-3 bg-black/20 rounded-lg">
-      <span className="font-semibold text-slate-300">{label}:</span>
-      <div className="flex items-center gap-2">
-        <span className="font-mono text-white bg-black/30 px-2 py-1 rounded">
-          {isVisible ? value : '••••••••••••'}
-        </span>
-        {isPassword && (
-          <button onClick={() => setIsVisible(!isVisible)} className="text-slate-400 hover:text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              {isVisible ? <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" /> : <path d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.367zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM10 18a8 8 0 100-16 8 8 0 000 16z" />}
-            </svg>
-          </button>
-        )}
-        <button onClick={handleCopy} className="text-slate-400 hover:text-white text-xs font-semibold">{copyText}</button>
-      </div>
-    </div>
-  );
-};
-
 
 const JoinGroupModal: React.FC<JoinGroupModalProps> = ({ isOpen, onClose, group, userCredits, onConfirmJoin, onAddCredits }) => {
   const [membershipType, setMembershipType] = useState<'monthly' | 'temporary'>('monthly');
@@ -128,9 +98,11 @@ const JoinGroupModal: React.FC<JoinGroupModalProps> = ({ isOpen, onClose, group,
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Successfully Joined!</h2>
             <p className="text-slate-300 mb-6">Here are your credentials for {group.name}.</p>
-            <div className="space-y-3 mb-6">
-              <CredentialRow label="Username" value={group.credentials?.username || 'N/A'} />
-              <CredentialRow label="Password" value={group.credentials?.password || 'N/A'} isPassword />
+            <div className="p-4 bg-black/20 rounded-lg mb-6">
+              <div className="space-y-2">
+                  <CredentialRow label="Username" value={group.credentials?.username || 'N/A'} />
+                  <CredentialRow label="Password" value={group.credentials?.password || 'N/A'} isPassword />
+              </div>
             </div>
             <button
               onClick={resetAndClose}

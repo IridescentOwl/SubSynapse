@@ -12,12 +12,17 @@ interface CreateGroupModalProps {
 const services: { value: IconName, label: string }[] = [
     { value: 'netflix', label: 'Netflix' },
     { value: 'spotify', label: 'Spotify' },
-    { value: 'youtube', label: 'YouTube' },
+    { value: 'youtube', label: 'YouTube Premium' },
     { value: 'disney', label: 'Disney+' },
     { value: 'hbo', label: 'HBO Max' },
-    { value: 'office', label: 'Microsoft 35' },
-    { value: 'adobe', label: 'Adobe CC' },
-    { value: 'canva', label: 'Canva' },
+    { value: 'office', label: 'Microsoft 365' },
+    { value: 'adobe', label: 'Adobe Creative Cloud' },
+    { value: 'canva', label: 'Canva Pro' },
+    { value: 'chatgpt', label: 'ChatGPT Plus' },
+    { value: 'claude', label: 'Claude Pro' },
+    { value: 'applemusic', label: 'Apple Music' },
+    { value: 'swiggy', label: 'Swiggy One' },
+    { value: 'zomato', label: 'Zomato Pro' },
 ];
 const categories = ['Video', 'Music', 'Productivity', 'Design'].map(c => ({ value: c, label: c }));
 

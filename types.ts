@@ -35,4 +35,4 @@ export interface User {
     creditBalance: number;
 }
 
-export type IconName = 'netflix' | 'spotify' | 'youtube' | 'hbo' | 'chatgpt' | 'google' | 'swiggy' | 'zomato' | 'applemusic' | 'claude' | 'figma' | 'adonisjs' | 'perplexity' | 'protonvpn' | 'steam' | 'warp';
+export type IconName = 'netflix' | 'spotify' | 'youtube' | 'hbo' | 'chatgpt' | 'swiggy' | 'zomato' | 'applemusic' | 'claude' | 'adobe' | 'canva' | 'disney' | 'office';

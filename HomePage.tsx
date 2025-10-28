@@ -8,7 +8,7 @@ interface HomePageProps {
   isReady: boolean;
 }
 
-const featuredServices: IconName[] = ['netflix', 'spotify', 'youtube', 'hbo', 'chatgpt', 'google', 'swiggy', 'zomato', 'applemusic', 'claude', 'figma', 'adonisjs', 'perplexity', 'protonvpn', 'steam', 'warp'];
+const featuredServices: IconName[] = ['netflix', 'spotify', 'youtube', 'hbo', 'chatgpt', 'swiggy', 'zomato', 'applemusic', 'claude', 'adobe', 'canva', 'disney', 'office'];
 
 const testimonials = [
     { quote: "SubSynapse is a game-changer! I'm saving over $50 a month without sacrificing any of my favorite shows or music. Highly recommend!", author: "Sarah J." },

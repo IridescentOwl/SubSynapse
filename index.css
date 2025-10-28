@@ -82,88 +82,13 @@ html {
       background-position: 50% 50%, 50% 50%;
     }
   }
-}
-
-/* Neon Icon Styles */
-.neon-icon-container {
-  position: relative;
-}
-
-.neon-icon-glow {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  opacity: 0.8;
-  filter: 
-    drop-shadow(0 0 0.2px var(--color-primary)) 
-    drop-shadow(0 0 0.5px var(--color-primary)) 
-    drop-shadow(0 0 1.5px var(--color-secondary));
-  transition: all 0.3s ease-in-out;
-}
-
-.neon-icon-main {
-  position: relative;
-  z-index: 2;
-  transition: all 0.3s ease-in-out;
-}
-
-.neon-icon-main svg {
-  fill: var(--color-primary);
-  transition: all 0.3s ease-in-out;
-  display: block;
-  margin: 0 auto;
-}
-
-.neon-icon-glow svg {
-  fill: var(--color-primary);
-  display: block;
-  margin: 0 auto;
-}
-
-.neon-icon:hover .neon-icon-glow {
-  opacity: 1;
-  filter: 
-    drop-shadow(0 0 0.5px var(--color-primary)) 
-    drop-shadow(0 0 1.5px var(--color-primary)) 
-    drop-shadow(0 0 3px var(--color-secondary));
-}
-
-.neon-icon:hover .neon-icon-main {
-  transform: scale(1.05);
-}
-
-.neon-icon:hover .neon-icon-main svg {
-  fill: var(--color-secondary);
-}
-
-/* Optional pulsing animation */
-@keyframes neon-pulse {
-  0% {
-    filter: 
-      drop-shadow(0 0 0.2px var(--color-primary)) 
-      drop-shadow(0 0 0.5px var(--color-primary)) 
-      drop-shadow(0 0 1.5px var(--color-secondary));
+  
+  /* Disable animations for users who prefer reduced motion */
+  * {
+    animation-duration: 0.01s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01s !important;
   }
-  50% {
-    filter: 
-      drop-shadow(0 0 0.5px var(--color-primary)) 
-      drop-shadow(0 0 1.5px var(--color-primary)) 
-      drop-shadow(0 0 3px var(--color-secondary));
-  }
-  100% {
-    filter: 
-      drop-shadow(0 0 0.2px var(--color-primary)) 
-      drop-shadow(0 0 0.5px var(--color-primary)) 
-      drop-shadow(0 0 1.5px var(--color-secondary));
-  }
-}
-
-/* Add pulsing animation class */
-.neon-icon.pulse svg {
-  animation: neon-pulse 4s infinite ease-in-out;
 }
 
 /* Focus states for accessibility */
@@ -174,20 +99,19 @@ button:focus-visible,
   border-radius: 8px;
 }
 
-/* Enhanced transitions */
+/* Enhanced transitions - optimized for mobile */
 .transition-enhanced {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.2s ease;
 }
 
 /* Performance optimizations */
 .gpu-accelerated {
   transform: translateZ(0);
-  will-change: transform;
 }
 
-/* Subtle background patterns */
+/* Subtle background patterns - lighter on mobile */
 .pattern-dots {
-  background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
@@ -202,5 +126,77 @@ button:focus-visible,
   }
   50% {
     opacity: .5;
+  }
+}
+
+/* Mobile Performance Optimizations */
+@media (max-width: 768px) {
+  /* Reduce blur effects that are expensive on mobile */
+  .backdrop-blur-sm {
+    backdrop-filter: none;
+    background-color: rgba(15, 23, 42, 0.8);
+  }
+  
+  /* Simplify transitions on mobile */
+  .transition-all {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  
+  /* Reduce complex hover effects on mobile */
+  .group:hover .group-hover\:scale-95 {
+    transform: none;
+  }
+  
+  .group:hover .group-hover\:opacity-60 {
+    opacity: 0.9;
+  }
+  
+  /* Optimize scroll animations for mobile */
+  .animate-scroll-left-fast {
+    animation-duration: 90s;
+  }
+  
+  .animate-scroll-left-slow {
+    animation-duration: 150s;
+  }
+  
+  /* Disable expensive GPU acceleration overuse */
+  .gpu-accelerated {
+    will-change: auto;
+    transform: none;
+  }
+  
+  /* Reduce text shadows on mobile */
+  .text-shadow {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Simplify gradients on mobile */
+  .btn-primary {
+    background: #0ea5e9;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
+  }
+  
+  .btn-primary:hover {
+    background: #0284c7;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+    transform: none;
+  }
+}
+
+/* Optimize for very small screens */
+@media (max-width: 480px) {
+  /* Further reduce animations */
+  .transition-enhanced {
+    transition: none;
+  }
+  
+  /* Disable hover effects on touch devices */
+  .hover\:scale-105:hover {
+    transform: none;
+  }
+  
+  .hover\:scale-110:hover {
+    transform: none;
   }
 }

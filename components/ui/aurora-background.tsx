@@ -21,8 +21,8 @@ export const AuroraBackground = ({
         className
       )}
     >
-      {/* Aurora animation layer */}
-      <div className="absolute inset-0 overflow-hidden">
+      {/* Simplified Aurora animation layer - disabled on mobile for performance */}
+      <div className="absolute inset-0 overflow-hidden hidden md:block">
         <div
           className={cn(
             `
@@ -31,12 +31,12 @@ export const AuroraBackground = ({
             [background-image:var(--dark-gradient),var(--aurora)]
             [background-size:300%,_200%]
             [background-position:50%_50%,50%_50%]
-            filter blur-[10px] invert-0
+            opacity-20
             after:content-[""] after:absolute after:inset-0 after:[background-image:var(--dark-gradient),var(--aurora)]
             after:[background-size:200%,_100%] 
-            motion-safe:after:animate-[aurora_120s_linear_infinite] motion-reduce:after:animate-none after:[background-attachment:fixed] after:mix-blend-difference
+            motion-safe:after:animate-[aurora_180s_linear_infinite] motion-reduce:after:animate-none after:[background-attachment:fixed] after:mix-blend-difference
             pointer-events-none
-            absolute -inset-[10px] opacity-25 will-change-transform`,
+            absolute -inset-[10px] will-change-transform`,
 
             showRadialGradient &&
               `[mask-image:radial-gradient(ellipse_at_100%_0%,black_10%,var(--transparent)_70%)]`
@@ -44,15 +44,15 @@ export const AuroraBackground = ({
         ></div>
       </div>
       
-      {/* Subtle overlay for better content readability */}
-      <div className="absolute inset-0 bg-slate-900/5 backdrop-blur-[0.5px] z-20" />
+      {/* Simplified overlay for mobile */}
+      <div className="absolute inset-0 bg-slate-900/10 z-20" />
       
       {/* Content layer */}
-      <div className="relative z-30 pattern-dots">
+      <div className="relative z-30">
         {children}
       </div>
       
-      {/* This style block is necessary to define the CSS variables for the gradient colors. */}
+      {/* Optimized CSS variables */}
       <style>{`
         @property --purple { syntax: "<color>"; initial-value: #9333ea; inherits: false; }
         @property --violet { syntax: "<color>"; initial-value: #7c3aed; inherits: false; }

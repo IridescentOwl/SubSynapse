@@ -196,6 +196,8 @@ export class AuthController {
           password: hashedPassword,
           passwordResetToken: null,
           passwordResetTokenExpires: null,
+          failedLoginAttempts: 0,
+          lockoutUntil: null,
         },
       });
 

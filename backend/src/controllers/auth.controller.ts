@@ -2,7 +2,9 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthService } from '../services/auth.service';
 import { EmailService } from '../services/email.service';
+import { AuditService } from '../services/audit.service';
 import { generateOtp, generateSecureToken } from '../utils/crypto.util';
+import { log } from '../utils/logging.util';
 
 const prisma = new PrismaClient();
 
@@ -41,9 +43,11 @@ export class AuthController {
 
       await EmailService.sendVerificationEmail(email, verificationToken);
 
+      await AuditService.log('USER_REGISTER', user.id, `User ${email} registered successfully`, req.ip, req.headers['user-agent']);
+
       return res.status(201).json({ message: 'User registered. Please check your email for verification OTP.' });
     } catch (error) {
-      console.error(error);
+      log('error', 'An error occurred during registration', { error });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
@@ -78,7 +82,7 @@ export class AuthController {
 
       return res.status(200).json({ message: 'Email verified successfully' });
     } catch (error) {
-      console.error(error);
+      log('error', 'An error occurred during email verification', { error });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
@@ -116,6 +120,8 @@ export class AuthController {
           data: { failedLoginAttempts: newFailedAttempts, lockoutUntil },
         });
 
+        await AuditService.log('LOGIN_FAILURE', user.id, `User ${email} failed to login`, req.ip, req.headers['user-agent']);
+
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
@@ -129,11 +135,13 @@ export class AuthController {
         data: { failedLoginAttempts: 0, lockoutUntil: null },
       });
 
-      const { accessToken, refreshToken } = AuthService.generateTokens(user);
+      const { accessToken, refreshToken } = await AuthService.generateTokens(user, req.ip, req.headers['user-agent']);
+
+      await AuditService.log('LOGIN_SUCCESS', user.id, `User ${email} logged in successfully`, req.ip, req.headers['user-agent']);
 
       return res.status(200).json({ accessToken, refreshToken });
     } catch (error) {
-      console.error(error);
+      log('error', 'An error occurred during login', { error });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
@@ -158,12 +166,14 @@ export class AuthController {
         });
 
         await EmailService.sendPasswordResetEmail(email, passwordResetToken);
+
+        await AuditService.log('PASSWORD_RESET_REQUEST', user.id, `User ${email} requested a password reset`, req.ip, req.headers['user-agent']);
       }
 
       // Always return a success message to prevent email enumeration
       return res.status(200).json({ message: 'If a user with that email exists, a password reset link has been sent.' });
     } catch (error) {
-      console.error(error);
+      log('error', 'An error occurred during forgot password', { error });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
@@ -201,9 +211,11 @@ export class AuthController {
         },
       });
 
+      await AuditService.log('PASSWORD_RESET_SUCCESS', user.id, `User ${user.email} successfully reset their password`, req.ip, req.headers['user-agent']);
+
       return res.status(200).json({ message: 'Password reset successfully' });
     } catch (error) {
-      console.error(error);
+      log('error', 'An error occurred during password reset', { error });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
@@ -225,7 +237,52 @@ export class AuthController {
 
       return res.status(200).json({ message: 'Token is valid' });
     } catch (error) {
-      console.error(error);
+      log('error', 'An error occurred during token validation', { error });
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  public static async logout(req: Request, res: Response): Promise<Response> {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({ message: 'Refresh token is required' });
+    }
+
+    try {
+      await AuthService.invalidateRefreshToken(refreshToken);
+      return res.status(200).json({ message: 'Logged out successfully' });
+    } catch (error) {
+      log('error', 'An error occurred during logout', { error });
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  public static async refreshToken(req: Request, res: Response): Promise<Response> {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({ message: 'Refresh token is required' });
+    }
+
+    try {
+      const decoded = await AuthService.verifyRefreshToken(refreshToken);
+
+      if (!decoded) {
+        return res.status(401).json({ message: 'Invalid or expired refresh token' });
+      }
+
+      const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+
+      if (!user) {
+        return res.status(401).json({ message: 'User not found' });
+      }
+
+      const { accessToken } = await AuthService.generateTokens(user, req.ip, req.headers['user-agent']);
+
+      return res.status(200).json({ accessToken });
+    } catch (error) {
+      log('error', 'An error occurred during token refresh', { error });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }

@@ -31,4 +31,40 @@ model User {
 
   createdAt                 DateTime  @default(now())
   updatedAt                 DateTime  @updatedAt
+
+  subscriptions             Subscription[]
+  activeSessions            ActiveSession[]
+}
+
+model Subscription {
+  id          Int       @id @default(autoincrement())
+  name        String
+  username    String
+  password    String // This will be encrypted
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model AuditLog {
+  id          Int       @id @default(autoincrement())
+  action      String
+  userId      Int?
+  details     String?
+  ipAddress   String?
+  userAgent   String?
+  timestamp   DateTime  @default(now())
+}
+
+model ActiveSession {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token       String    @unique
+  ipAddress   String?
+  userAgent   String?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
 }

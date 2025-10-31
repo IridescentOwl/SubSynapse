@@ -4,37 +4,30 @@ import { PrismaClient, User } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Extend the Express Request interface to include the user object
-declare global {
-  namespace Express {
-    interface Request {
-      user?: User;
-    }
-  }
+export interface AuthenticatedRequest extends Request {
+  user?: User;
 }
 
-export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+export const authenticate = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<Response | void> => {
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
-    return res.sendStatus(401); // Unauthorized
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  const payload = AuthService.verifyToken(token);
-  if (!payload) {
-    return res.sendStatus(403); // Forbidden
+  const token = authHeader.split(' ')[1];
+  const decoded = AuthService.verifyToken(token);
+
+  if (!decoded) {
+    return res.status(401).json({ message: 'Invalid or expired token' });
   }
 
-  try {
-    const user = await prisma.user.findUnique({ where: { id: payload.userId } });
-    if (!user) {
-      return res.sendStatus(404); // Not Found
-    }
+  const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
 
-    req.user = user;
-    next();
-  } catch (error) {
-    res.status(500).json({ message: 'Internal server error' });
+  if (!user) {
+    return res.status(401).json({ message: 'User not found' });
   }
+
+  req.user = user;
+  next();
 };

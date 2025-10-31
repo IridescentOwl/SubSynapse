@@ -16,7 +16,15 @@ app.use(cors({
   credentials: true, // Allow cookies and authorization headers
 }));
 
+import { log } from './utils/logging.util';
+
 app.use(express.json());
+
+// Logging middleware
+app.use((req, res, next) => {
+  log('info', `Incoming request: ${req.method} ${req.url}`, { body: req.body });
+  next();
+});
 
 app.get('/', (req, res) => {
   res.send('Server is running!');

@@ -4,9 +4,7 @@ import { PrismaClient, User } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export interface AuthenticatedRequest extends Request {
-  user?: User;
-}
+import { AuthenticatedRequest } from '../types/express';
 
 export const authenticate = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   const authHeader = req.headers.authorization;

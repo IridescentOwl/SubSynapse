@@ -8,7 +8,7 @@ type SubscriptionWithDecryptedPassword = Omit<Subscription, 'password'> & { pass
 
 export class SubscriptionService {
   public static async createSubscription(
-    userId: number,
+    userId: string,
     name: string,
     username: string,
     password: string
@@ -25,14 +25,14 @@ export class SubscriptionService {
     return { ...subscription, password: decrypt(subscription.password) };
   }
 
-  public static async getSubscriptions(userId: number): Promise<SubscriptionWithDecryptedPassword[]> {
+  public static async getSubscriptions(userId: string): Promise<SubscriptionWithDecryptedPassword[]> {
     const subscriptions = await prisma.subscription.findMany({
       where: { userId },
     });
     return subscriptions.map((sub) => ({ ...sub, password: decrypt(sub.password) }));
   }
 
-  public static async getSubscription(userId: number, subscriptionId: number): Promise<SubscriptionWithDecryptedPassword | null> {
+  public static async getSubscription(userId: string, subscriptionId: string): Promise<SubscriptionWithDecryptedPassword | null> {
     const subscription = await prisma.subscription.findFirst({
       where: { id: subscriptionId, userId },
     });
@@ -43,8 +43,8 @@ export class SubscriptionService {
   }
 
   public static async updateSubscription(
-    userId: number,
-    subscriptionId: number,
+    userId: string,
+    subscriptionId: string,
     name?: string,
     username?: string,
     password?: string
@@ -54,8 +54,18 @@ export class SubscriptionService {
     if (username) data.username = username;
     if (password) data.password = encrypt(password);
 
-    const subscription = await prisma.subscription.update({
+    // For MongoDB, you need to use the `updateMany` or find the unique record first to update.
+    // Here, we'll find the record first to ensure it belongs to the user.
+    const existingSubscription = await prisma.subscription.findFirst({
       where: { id: subscriptionId, userId },
+    });
+
+    if (!existingSubscription) {
+      return null;
+    }
+
+    const subscription = await prisma.subscription.update({
+      where: { id: subscriptionId },
       data,
     });
     if (subscription) {
@@ -64,9 +74,17 @@ export class SubscriptionService {
     return null;
   }
 
-  public static async deleteSubscription(userId: number, subscriptionId: number): Promise<void> {
-    await prisma.subscription.delete({
+  public static async deleteSubscription(userId: string, subscriptionId: string): Promise<void> {
+    // For MongoDB, you need to use the `deleteMany` or find the unique record first to delete.
+    // Here, we'll find the record first to ensure it belongs to the user.
+    const existingSubscription = await prisma.subscription.findFirst({
       where: { id: subscriptionId, userId },
     });
+
+    if (existingSubscription) {
+      await prisma.subscription.delete({
+        where: { id: subscriptionId },
+      });
+    }
   }
 }

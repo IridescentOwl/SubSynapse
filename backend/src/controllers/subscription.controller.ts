@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { SubscriptionService } from '../services/subscription.service';
-import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { AuthenticatedRequest } from '../types/express';
 import { log } from '../utils/logging.util';
 
 export class SubscriptionController {
@@ -35,7 +35,7 @@ export class SubscriptionController {
 
   public static async getSubscription(req: AuthenticatedRequest, res: Response): Promise<Response> {
     const userId = req.user!.id;
-    const subscriptionId = parseInt(req.params.id, 10);
+    const subscriptionId = req.params.id;
 
     try {
       const subscription = await SubscriptionService.getSubscription(userId, subscriptionId);
@@ -51,7 +51,7 @@ export class SubscriptionController {
 
   public static async updateSubscription(req: AuthenticatedRequest, res: Response): Promise<Response> {
     const userId = req.user!.id;
-    const subscriptionId = parseInt(req.params.id, 10);
+    const subscriptionId = req.params.id;
     const { name, username, password } = req.body;
 
     try {
@@ -68,7 +68,7 @@ export class SubscriptionController {
 
   public static async deleteSubscription(req: AuthenticatedRequest, res: Response): Promise<Response> {
     const userId = req.user!.id;
-    const subscriptionId = parseInt(req.params.id, 10);
+    const subscriptionId = req.params.id;
 
     try {
       await SubscriptionService.deleteSubscription(userId, subscriptionId);

@@ -6,12 +6,12 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id                        Int       @id @default(autoincrement())
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
   email                     String    @unique
   name                      String?
   password                  String
@@ -37,11 +37,11 @@ model User {
 }
 
 model Subscription {
-  id          Int       @id @default(autoincrement())
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   username    String
   password    String // This will be encrypted
-  userId      Int
+  userId      String    @db.ObjectId
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt   DateTime  @default(now())
@@ -49,9 +49,9 @@ model Subscription {
 }
 
 model AuditLog {
-  id          Int       @id @default(autoincrement())
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
   action      String
-  userId      Int?
+  userId      String?   @db.ObjectId
   details     String?
   ipAddress   String?
   userAgent   String?
@@ -59,8 +59,8 @@ model AuditLog {
 }
 
 model ActiveSession {
-  id          Int       @id @default(autoincrement())
-  userId      Int
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @db.ObjectId
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   token       String    @unique
   ipAddress   String?

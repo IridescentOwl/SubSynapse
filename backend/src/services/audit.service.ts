@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 export class AuditService {
   public static async log(
     action: string,
-    userId?: number,
+    userId?: string,
     details?: string,
     ipAddress?: string,
     userAgent?: string

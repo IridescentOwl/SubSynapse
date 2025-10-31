@@ -3,8 +3,11 @@ import { encrypt, decrypt } from '../utils/encryption.util';
 
 const prisma = new PrismaClient();
 
-// Omit the 'password' field from the Subscription type and add a 'password' field of type string.
-type SubscriptionWithDecryptedPassword = Omit<Subscription, 'password'> & { password?: string };
+// Omit 'username' and 'password' fields and add them back as optional strings
+type SubscriptionWithDecryptedCredentials = Omit<Subscription, 'username' | 'password'> & {
+  username?: string;
+  password?: string;
+};
 
 export class SubscriptionService {
   public static async createSubscription(
@@ -12,32 +15,49 @@ export class SubscriptionService {
     name: string,
     username: string,
     password: string
-  ): Promise<SubscriptionWithDecryptedPassword> {
+  ): Promise<SubscriptionWithDecryptedCredentials> {
+    const encryptedUsername = encrypt(username);
     const encryptedPassword = encrypt(password);
+
     const subscription = await prisma.subscription.create({
       data: {
         userId,
         name,
-        username,
+        username: encryptedUsername,
         password: encryptedPassword,
       },
     });
-    return { ...subscription, password: decrypt(subscription.password) };
+
+    return {
+      ...subscription,
+      username: decrypt(subscription.username),
+      password: decrypt(subscription.password),
+    };
   }
 
-  public static async getSubscriptions(userId: string): Promise<SubscriptionWithDecryptedPassword[]> {
+  public static async getSubscriptions(userId: string): Promise<SubscriptionWithDecryptedCredentials[]> {
     const subscriptions = await prisma.subscription.findMany({
       where: { userId },
     });
-    return subscriptions.map((sub) => ({ ...sub, password: decrypt(sub.password) }));
+
+    return subscriptions.map((sub) => ({
+      ...sub,
+      username: decrypt(sub.username),
+      password: decrypt(sub.password),
+    }));
   }
 
-  public static async getSubscription(userId: string, subscriptionId: string): Promise<SubscriptionWithDecryptedPassword | null> {
+  public static async getSubscription(userId: string, subscriptionId: string): Promise<SubscriptionWithDecryptedCredentials | null> {
     const subscription = await prisma.subscription.findFirst({
       where: { id: subscriptionId, userId },
     });
+
     if (subscription) {
-      return { ...subscription, password: decrypt(subscription.password) };
+      return {
+        ...subscription,
+        username: decrypt(subscription.username),
+        password: decrypt(subscription.password),
+      };
     }
     return null;
   }
@@ -48,14 +68,12 @@ export class SubscriptionService {
     name?: string,
     username?: string,
     password?: string
-  ): Promise<SubscriptionWithDecryptedPassword | null> {
+  ): Promise<SubscriptionWithDecryptedCredentials | null> {
     const data: { name?: string; username?: string; password?: string } = {};
     if (name) data.name = name;
-    if (username) data.username = username;
+    if (username) data.username = encrypt(username);
     if (password) data.password = encrypt(password);
 
-    // For MongoDB, you need to use the `updateMany` or find the unique record first to update.
-    // Here, we'll find the record first to ensure it belongs to the user.
     const existingSubscription = await prisma.subscription.findFirst({
       where: { id: subscriptionId, userId },
     });
@@ -68,15 +86,18 @@ export class SubscriptionService {
       where: { id: subscriptionId },
       data,
     });
+
     if (subscription) {
-      return { ...subscription, password: decrypt(subscription.password) };
+      return {
+        ...subscription,
+        username: decrypt(subscription.username),
+        password: decrypt(subscription.password),
+      };
     }
     return null;
   }
 
   public static async deleteSubscription(userId: string, subscriptionId: string): Promise<void> {
-    // For MongoDB, you need to use the `deleteMany` or find the unique record first to delete.
-    // Here, we'll find the record first to ensure it belongs to the user.
     const existingSubscription = await prisma.subscription.findFirst({
       where: { id: subscriptionId, userId },
     });

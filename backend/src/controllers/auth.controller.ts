@@ -168,9 +168,12 @@ export class AuthController {
         const passwordResetToken = generateSecureToken();
         const passwordResetTokenExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { passwordResetToken, passwordResetTokenExpires },
+        await prisma.passwordResetToken.create({
+          data: {
+            userId: user.id,
+            token: passwordResetToken,
+            expiresAt: passwordResetTokenExpires,
+          },
         });
 
         await EmailService.sendPasswordResetEmail(email, passwordResetToken);
@@ -195,28 +198,32 @@ export class AuthController {
     }
 
     try {
-      const user = await prisma.user.findFirst({
+      const resetRecord = await prisma.passwordResetToken.findFirst({
         where: {
-          passwordResetToken: token,
-          passwordResetTokenExpires: { gt: new Date() },
+          token: token,
+          expiresAt: { gt: new Date() },
+          usedAt: null,
         },
       });
 
-      if (!user) {
+      if (!resetRecord) {
         return res.status(400).json({ message: 'Invalid or expired password reset token' });
       }
 
       const hashedPassword = await AuthService.hashPassword(password);
 
       await prisma.user.update({
-        where: { id: user.id },
+        where: { id: resetRecord.userId },
         data: {
           password: hashedPassword,
-          passwordResetToken: null,
-          passwordResetTokenExpires: null,
           failedLoginAttempts: 0,
           lockoutUntil: null,
         },
+      });
+
+      await prisma.passwordResetToken.update({
+        where: { id: resetRecord.id },
+        data: { usedAt: new Date() },
       });
 
       await AuditService.log('PASSWORD_RESET_SUCCESS', user.id, `User ${user.email} successfully reset their password`, req.ip, 'User');
@@ -232,14 +239,15 @@ export class AuthController {
     const { token } = req.params;
 
     try {
-      const user = await prisma.user.findFirst({
+      const resetRecord = await prisma.passwordResetToken.findFirst({
         where: {
-          passwordResetToken: token,
-          passwordResetTokenExpires: { gt: new Date() },
+          token: token,
+          expiresAt: { gt: new Date() },
+          usedAt: null,
         },
       });
 
-      if (!user) {
+      if (!resetRecord) {
         return res.status(400).json({ message: 'Invalid or expired password reset token' });
       }
 

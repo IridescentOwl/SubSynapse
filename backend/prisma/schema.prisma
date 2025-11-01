@@ -11,60 +11,147 @@ datasource db {
 }
 
 model User {
-  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
-  email                     String    @unique
-  name                      String?
-  password                  String
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  name             String
+  email            String    @unique
+  password_hash    String
+  credit_balance   Float     @default(0)
+  is_verified      Boolean   @default(false)
+  created_at       DateTime  @default(now())
+  last_login       DateTime?
 
-  emailVerified             Boolean   @default(false)
-  verificationToken         String?
-  verificationTokenExpires  DateTime?
-
-  passwordResetToken        String?
-  passwordResetTokenExpires DateTime?
-
-  failedLoginAttempts       Int       @default(0)
-  lockoutUntil              DateTime?
-
-  twoFactorSecret           String?
-  isTwoFactorEnabled        Boolean   @default(false)
-
-  createdAt                 DateTime  @default(now())
-  updatedAt                 DateTime  @updatedAt
-
-  subscriptions             Subscription[]
-  activeSessions            ActiveSession[]
+  owned_groups          Subscription_Group[]   @relation("Owner")
+  memberships           Group_Membership[]
+  transactions          Transaction[]
+  withdrawal_requests   Withdrawal_Request[]
+  reviews               Review[]
+  audit_logs            Audit_Log[]
+  email_verifications   Email_Verification[]
+  password_reset_tokens Password_Reset_Token[]
+  active_sessions       Active_Session[]
 }
 
-model Subscription {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  username    String
-  password    String // This will be encrypted
-  userId      String    @db.ObjectId
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Subscription_Group {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  owner_id        String    @db.ObjectId
+  name            String
+  service_type    String
+  total_price     Float
+  slots_total     Int
+  slots_filled    Int
+  is_active       Boolean   @default(true)
+  proof_document  String?
+  admin_approved  Boolean   @default(false)
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  owner           User              @relation("Owner", fields: [owner_id], references: [id])
+  memberships     Group_Membership[]
+  credentials     Encrypted_Credential[]
+  reviews         Review[]
 }
 
-model AuditLog {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+model Group_Membership {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  user_id     String   @db.ObjectId
+  group_id    String   @db.ObjectId
+  join_date   DateTime @default(now())
+  end_date    DateTime?
+  share_amount Float
+  is_active   Boolean  @default(true)
+
+  user  User @relation(fields: [user_id], references: [id])
+  group Subscription_Group @relation(fields: [group_id], references: [id])
+
+  @@unique([user_id, group_id])
+}
+
+model Transaction {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  user_id             String   @db.ObjectId
+  type                String   // e.g., "deposit", "withdrawal", "subscription_payment"
+  amount              Float
+  status              String   // e.g., "pending", "completed", "failed"
+  payment_gateway_id  String?
+  created_at          DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+}
+
+model Withdrawal_Request {
+  id                 String    @id @default(auto()) @map("_id") @db.ObjectId
+  user_id            String    @db.ObjectId
+  amount             Float
+  upi_id             String
+  status             String    // e.g., "pending", "approved", "rejected"
+  requested_at       DateTime  @default(now())
+  processed_at       DateTime?
+  cooldown_expires_at DateTime?
+
+  user User @relation(fields: [user_id], references: [id])
+}
+
+model Encrypted_Credential {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  group_id          String   @db.ObjectId
+  encrypted_username String
+  encrypted_password String
+  encryption_key_id String
+  created_at        DateTime @default(now())
+
+  group Subscription_Group @relation(fields: [group_id], references: [id])
+}
+
+model Review {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  user_id    String   @db.ObjectId
+  group_id   String   @db.ObjectId
+  rating     Int
+  comment    String?
+  created_at DateTime @default(now())
+
+  user  User               @relation(fields: [user_id], references: [id])
+  group Subscription_Group @relation(fields: [group_id], references: [id])
+}
+
+model Audit_Log {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  user_id     String   @db.ObjectId
   action      String
-  userId      String?   @db.ObjectId
-  details     String?
-  ipAddress   String?
-  userAgent   String?
-  timestamp   DateTime  @default(now())
+  table_name  String
+  old_values  Json?
+  new_values  Json?
+  ip_address  String?
+  created_at  DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
 }
 
-model ActiveSession {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String    @db.ObjectId
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token       String    @unique
-  ipAddress   String?
-  userAgent   String?
-  expiresAt   DateTime
-  createdAt   DateTime  @default(now())
+model Email_Verification {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  user_id    String    @db.ObjectId
+  token      String    @unique
+  expires_at DateTime
+  used_at    DateTime?
+
+  user User @relation(fields: [user_id], references: [id])
+}
+
+model Password_Reset_Token {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  user_id    String    @db.ObjectId
+  token      String    @unique
+  expires_at DateTime
+  used_at    DateTime?
+
+  user User @relation(fields: [user_id], references: [id])
+}
+
+model Active_Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  user_id      String   @db.ObjectId
+  session_token String   @unique
+  expires_at   DateTime
+  ip_address   String?
+  user_agent   String?
+
+  user User @relation(fields: [user_id], references: [id])
 }

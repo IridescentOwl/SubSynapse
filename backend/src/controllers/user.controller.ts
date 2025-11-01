@@ -44,4 +44,13 @@ export class UserController {
       res.status(500).json({ message: 'Error deactivating account', error });
     }
   }
+
+  public static async getMySubscriptions(req: Request, res: Response) {
+    try {
+      const subscriptions = await UserService.getMySubscriptions(req.user!.id);
+      res.json(subscriptions);
+    } catch (error) {
+      res.status(500).json({ message: 'Error fetching subscriptions', error });
+    }
+  }
 }

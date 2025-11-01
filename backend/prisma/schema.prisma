@@ -102,9 +102,9 @@ model WithdrawalRequest {
 model EncryptedCredentials {
   id                        String    @id @default(auto()) @map("_id") @db.ObjectId
   groupId                   String    @db.ObjectId @unique
-  encryptedUsername         String
-  encryptedPassword         String
-  encryptionKeyId           String
+  encryptedCredentials      String
+  encryptionKey             String
+  iv                        String
   createdAt                 DateTime  @default(now())
 
   group                     SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)

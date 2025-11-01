@@ -9,5 +9,6 @@ router.put('/profile', authenticate, UserController.updateProfile);
 router.post('/upload-avatar', authenticate, UserController.uploadAvatar);
 router.get('/transactions', authenticate, UserController.getTransactions);
 router.post('/deactivate-account', authenticate, UserController.deactivateAccount);
+router.get('/my-subscriptions', authenticate, UserController.getMySubscriptions);
 
 export default router;

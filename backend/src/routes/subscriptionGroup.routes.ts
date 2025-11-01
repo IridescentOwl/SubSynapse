@@ -4,9 +4,17 @@ import { authenticate } from '../middleware/auth.middleware';
 
 const router = Router();
 
-router.post('/', authenticate, SubscriptionGroupController.createGroup);
+import { upload } from '../middleware/file.middleware';
+
+router.post('/', authenticate, upload.single('proofDocument'), SubscriptionGroupController.createGroup);
 router.get('/', SubscriptionGroupController.getGroups);
 router.get('/:id', SubscriptionGroupController.getGroup);
 router.post('/join/:id', authenticate, SubscriptionGroupController.joinGroup);
+router.put('/:id', authenticate, SubscriptionGroupController.updateGroup);
+router.delete('/:id/leave', authenticate, SubscriptionGroupController.leaveGroup);
+router.post('/:id/credentials', authenticate, SubscriptionGroupController.storeCredentials);
+router.get('/:id/credentials', authenticate, SubscriptionGroupController.getCredentials);
+router.put('/:id/revoke-access', authenticate, SubscriptionGroupController.revokeAccess);
+router.get('/:id/members', authenticate, SubscriptionGroupController.getGroupMembers);
 
 export default router;

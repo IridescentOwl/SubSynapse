@@ -39,4 +39,16 @@ export class UserService {
       data: { isActive: false },
     });
   }
+
+  public static async getMySubscriptions(userId: string) {
+    return prisma.groupMembership.findMany({
+      where: {
+        userId,
+        isActive: true,
+      },
+      include: {
+        group: true,
+      },
+    });
+  }
 }

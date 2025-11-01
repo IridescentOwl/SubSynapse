@@ -1,7 +1,6 @@
-import { PrismaClient, Subscription } from '@prisma/client';
+import { Subscription } from '@prisma/client';
 import { encrypt, decrypt } from '../utils/encryption.util';
-
-const prisma = new PrismaClient();
+import { prisma } from '../utils/prisma.util';
 
 // Omit 'username' and 'password' fields and add them back as optional strings
 type SubscriptionWithDecryptedCredentials = Omit<Subscription, 'username' | 'password'> & {

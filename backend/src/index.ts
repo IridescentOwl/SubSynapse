@@ -1,12 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './utils/prisma.util';
 import authRoutes from './routes/auth.routes';
 
 dotenv.config();
-
-const prisma = new PrismaClient();
 
 const app = express();
 const port = process.env.PORT || 4000;

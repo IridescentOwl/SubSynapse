@@ -29,7 +29,7 @@ export class AuthController {
 
       const hashedPassword = await AuthService.hashPassword(password);
       const verificationToken = generateOtp();
-      const verificationTokenExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      const verificationTokenExpires = new Date(new Date().getTime() + 24 * 60 * 60 * 1000); // 1 day
 
       const user = await prisma.user.create({
         data: {
@@ -166,7 +166,7 @@ export class AuthController {
 
       if (user) {
         const passwordResetToken = generateSecureToken();
-        const passwordResetTokenExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        const passwordResetTokenExpires = new Date(new Date().getTime() + 24 * 60 * 60 * 1000); // 1 day
 
         await prisma.passwordResetToken.create({
           data: {
@@ -226,7 +226,11 @@ export class AuthController {
         data: { usedAt: new Date() },
       });
 
-      await AuditService.log('PASSWORD_RESET_SUCCESS', user.id, `User ${user.email} successfully reset their password`, req.ip, 'User');
+      // Fetch user for audit logging
+      const user = await prisma.user.findUnique({ where: { id: resetRecord.userId } });
+      if (user) {
+        await AuditService.log('PASSWORD_RESET_SUCCESS', user.id, `User ${user.email} successfully reset their password`, req.ip, 'User');
+      }
 
       return res.status(200).json({ message: 'Password reset successfully' });
     } catch (error) {

@@ -36,8 +36,14 @@ export class AuthController {
           email,
           name,
           password: hashedPassword,
-          verificationToken,
-          verificationTokenExpires,
+        },
+      });
+
+      await prisma.emailVerification.create({
+        data: {
+          userId: user.id,
+          token: verificationToken,
+          expiresAt: verificationTokenExpires,
         },
       });
 
@@ -60,24 +66,26 @@ export class AuthController {
     }
 
     try {
-      const user = await prisma.user.findFirst({
+      const verificationRecord = await prisma.emailVerification.findFirst({
         where: {
-          verificationToken: token,
-          verificationTokenExpires: { gt: new Date() },
+          token: token,
+          expiresAt: { gt: new Date() },
+          usedAt: null,
         },
       });
 
-      if (!user) {
+      if (!verificationRecord) {
         return res.status(400).json({ message: 'Invalid or expired verification token' });
       }
 
       await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          emailVerified: true,
-          verificationToken: null,
-          verificationTokenExpires: null,
-        },
+        where: { id: verificationRecord.userId },
+        data: { emailVerified: true },
+      });
+
+      await prisma.emailVerification.update({
+        where: { id: verificationRecord.id },
+        data: { usedAt: new Date() },
       });
 
       return res.status(200).json({ message: 'Email verified successfully' });

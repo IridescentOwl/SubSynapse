@@ -6,17 +6,19 @@ export class AuditService {
   public static async log(
     action: string,
     userId?: string,
-    details?: string,
+    newValues?: string,
     ipAddress?: string,
-    userAgent?: string
+    tableName?: string,
+    oldValues?: string
   ): Promise<void> {
     await prisma.auditLog.create({
       data: {
         action,
         userId,
-        details,
+        newValues,
         ipAddress,
-        userAgent,
+        tableName,
+        oldValues,
       },
     });
   }

@@ -12,16 +12,13 @@ datasource db {
 
 model User {
   id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name                      String
   email                     String    @unique
-  name                      String?
   password                  String
-
+  creditBalance             Float     @default(0)
   emailVerified             Boolean   @default(false)
-  verificationToken         String?
-  verificationTokenExpires  DateTime?
-
-  passwordResetToken        String?
-  passwordResetTokenExpires DateTime?
+  createdAt                 DateTime  @default(now())
+  lastLogin                 DateTime?
 
   failedLoginAttempts       Int       @default(0)
   lockoutUntil              DateTime?
@@ -29,42 +26,142 @@ model User {
   twoFactorSecret           String?
   isTwoFactorEnabled        Boolean   @default(false)
 
-  createdAt                 DateTime  @default(now())
   updatedAt                 DateTime  @updatedAt
 
-  subscriptions             Subscription[]
+  ownedGroups               SubscriptionGroup[]
+  memberships               GroupMembership[]
+  transactions              Transaction[]
+  withdrawalRequests        WithdrawalRequest[]
+  reviews                   Review[]
+  auditLogs                 AuditLog[]
+  emailVerifications        EmailVerification[]
+  passwordResetTokens       PasswordResetToken[]
   activeSessions            ActiveSession[]
 }
 
-model Subscription {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  username    String
-  password    String // This will be encrypted
-  userId      String    @db.ObjectId
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+model SubscriptionGroup {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  ownerId                   String    @db.ObjectId
+  name                      String
+  serviceType               String
+  totalPrice                Float
+  slotsTotal                Int
+  slotsFilled               Int
+  isActive                  Boolean   @default(true)
+  proofDocument             String?
+  adminApproved             Boolean   @default(false)
+  createdAt                 DateTime  @default(now())
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  owner                     User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members                   GroupMembership[]
+  credentials               EncryptedCredentials?
+  reviews                   Review[]
+}
+
+model GroupMembership {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String    @db.ObjectId
+  groupId                   String    @db.ObjectId
+  joinDate                  DateTime  @default(now())
+  endDate                   DateTime?
+  shareAmount               Float
+  isActive                  Boolean   @default(true)
+
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group                     SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+}
+
+model Transaction {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String    @db.ObjectId
+  type                      String // e.g., "credit", "debit"
+  amount                    Float
+  status                    String // e.g., "pending", "completed", "failed"
+  paymentGatewayId          String?
+  createdAt                 DateTime  @default(now())
+
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WithdrawalRequest {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String    @db.ObjectId
+  amount                    Float
+  upiId                     String
+  status                    String // e.g., "pending", "approved", "rejected"
+  requestedAt               DateTime  @default(now())
+  processedAt               DateTime?
+  cooldownExpiresAt         DateTime?
+
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EncryptedCredentials {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  groupId                   String    @db.ObjectId @unique
+  encryptedUsername         String
+  encryptedPassword         String
+  encryptionKeyId           String
+  createdAt                 DateTime  @default(now())
+
+  group                     SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String    @db.ObjectId
+  groupId                   String    @db.ObjectId
+  rating                    Int
+  comment                   String?
+  createdAt                 DateTime  @default(now())
+
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group                     SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 }
 
 model AuditLog {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  action      String
-  userId      String?   @db.ObjectId
-  details     String?
-  ipAddress   String?
-  userAgent   String?
-  timestamp   DateTime  @default(now())
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String?   @db.ObjectId
+  action                    String
+  tableName                 String?
+  oldValues                 String? // JSON string
+  newValues                 String? // JSON string
+  ipAddress                 String?
+  createdAt                 DateTime  @default(now())
+
+  user                      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model EmailVerification {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String    @db.ObjectId
+  token                     String    @unique
+  expiresAt                 DateTime
+  usedAt                    DateTime?
+
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String    @db.ObjectId
+  token                     String    @unique
+  expiresAt                 DateTime
+  usedAt                    DateTime?
+
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ActiveSession {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String    @db.ObjectId
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token       String    @unique
-  ipAddress   String?
-  userAgent   String?
-  expiresAt   DateTime
-  createdAt   DateTime  @default(now())
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String    @db.ObjectId
+  sessionToken              String    @unique
+  expiresAt                 DateTime
+  ipAddress                 String?
+  userAgent                 String?
+  createdAt                 DateTime  @default(now())
+
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

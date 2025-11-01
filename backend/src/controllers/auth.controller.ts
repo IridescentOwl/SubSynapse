@@ -43,7 +43,7 @@ export class AuthController {
 
       await EmailService.sendVerificationEmail(email, verificationToken);
 
-      await AuditService.log('USER_REGISTER', user.id, `User ${email} registered successfully`, req.ip, req.headers['user-agent']);
+      await AuditService.log('USER_REGISTER', user.id, JSON.stringify(user), req.ip, 'User');
 
       return res.status(201).json({ message: 'User registered. Please check your email for verification OTP.' });
     } catch (error) {
@@ -120,7 +120,7 @@ export class AuthController {
           data: { failedLoginAttempts: newFailedAttempts, lockoutUntil },
         });
 
-        await AuditService.log('LOGIN_FAILURE', user.id, `User ${email} failed to login`, req.ip, req.headers['user-agent']);
+        await AuditService.log('LOGIN_FAILURE', user.id, `User ${email} failed to login`, req.ip, 'User');
 
         return res.status(401).json({ message: 'Invalid credentials' });
       }
@@ -137,7 +137,7 @@ export class AuthController {
 
       const { accessToken, refreshToken } = await AuthService.generateTokens(user, req.ip, req.headers['user-agent']);
 
-      await AuditService.log('LOGIN_SUCCESS', user.id, `User ${email} logged in successfully`, req.ip, req.headers['user-agent']);
+      await AuditService.log('LOGIN_SUCCESS', user.id, `User ${email} logged in successfully`, req.ip, 'User');
 
       return res.status(200).json({ accessToken, refreshToken });
     } catch (error) {
@@ -167,7 +167,7 @@ export class AuthController {
 
         await EmailService.sendPasswordResetEmail(email, passwordResetToken);
 
-        await AuditService.log('PASSWORD_RESET_REQUEST', user.id, `User ${email} requested a password reset`, req.ip, req.headers['user-agent']);
+        await AuditService.log('PASSWORD_RESET_REQUEST', user.id, `User ${email} requested a password reset`, req.ip, 'User');
       }
 
       // Always return a success message to prevent email enumeration
@@ -211,7 +211,7 @@ export class AuthController {
         },
       });
 
-      await AuditService.log('PASSWORD_RESET_SUCCESS', user.id, `User ${user.email} successfully reset their password`, req.ip, req.headers['user-agent']);
+      await AuditService.log('PASSWORD_RESET_SUCCESS', user.id, `User ${user.email} successfully reset their password`, req.ip, 'User');
 
       return res.status(200).json({ message: 'Password reset successfully' });
     } catch (error) {

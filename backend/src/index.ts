@@ -42,9 +42,9 @@ app.use('/api/auth', authRoutes);
 import profileRoutes from './routes/profile.routes';
 app.use('/api/profile', profileRoutes);
 
-// Use the subscription routes
-import subscriptionRoutes from './routes/subscription.routes';
-app.use('/api/subscriptions', subscriptionRoutes);
+// Use the subscription group routes
+import subscriptionGroupRoutes from './routes/subscriptionGroup.routes';
+app.use('/api/subscription-groups', subscriptionGroupRoutes);
 
 
 app.listen(port, () => {

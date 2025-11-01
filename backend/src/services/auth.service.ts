@@ -31,7 +31,7 @@ export class AuthService {
     await prisma.activeSession.create({
       data: {
         userId: user.id,
-        token: refreshToken,
+        sessionToken: refreshToken,
         ipAddress,
         userAgent,
         expiresAt,
@@ -56,7 +56,7 @@ export class AuthService {
     }
 
     const session = await prisma.activeSession.findUnique({
-      where: { token },
+      where: { sessionToken: token },
     });
 
     if (!session || session.expiresAt < new Date()) {
@@ -68,7 +68,7 @@ export class AuthService {
 
   public static async invalidateRefreshToken(token: string): Promise<void> {
     await prisma.activeSession.delete({
-      where: { token },
+      where: { sessionToken: token },
     });
   }
 }

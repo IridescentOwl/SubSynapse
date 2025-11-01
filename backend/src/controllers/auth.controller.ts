@@ -67,15 +67,23 @@ export class AuthController {
 
     try {
       const verificationRecord = await prisma.emailVerification.findFirst({
-        where: {
-          token: token,
-          expiresAt: { gt: new Date() },
-          usedAt: null,
-        },
+        where: { token: token },
       });
 
       if (!verificationRecord) {
-        return res.status(400).json({ message: 'Invalid or expired verification token' });
+        log('error', 'Token not found in database.', { token });
+        return res.status(400).json({ message: 'DIAGNOSTIC: Token not found in database.' });
+      }
+
+      if (verificationRecord.usedAt) {
+        log('error', 'Token has already been used.', { record: verificationRecord });
+        return res.status(400).json({ message: 'DIAGNOSTIC: Token has already been used.' });
+      }
+
+      const now = new Date();
+      if (verificationRecord.expiresAt <= now) {
+        log('error', 'Token is expired.', { record: verificationRecord, now });
+        return res.status(400).json({ message: 'DIAGNOSTIC: Token is expired.' });
       }
 
       await prisma.user.update({

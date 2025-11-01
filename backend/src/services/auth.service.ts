@@ -1,8 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { User, PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { User } from '@prisma/client';
+import prisma from '../utils/database.util';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-jwt-secret';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-jwt-refresh-secret';
 
@@ -31,7 +30,8 @@ export class AuthService {
     await prisma.activeSession.create({
       data: {
         userId: user.id,
-        token: refreshToken,
+        sessionToken: refreshToken,
+        token: refreshToken, // Legacy field for backward compatibility
         ipAddress,
         userAgent,
         expiresAt,
@@ -55,8 +55,13 @@ export class AuthService {
       return null;
     }
 
-    const session = await prisma.activeSession.findUnique({
-      where: { token },
+    const session = await prisma.activeSession.findFirst({
+      where: {
+        OR: [
+          { sessionToken: token },
+          { token: token }, // Legacy field support
+        ],
+      },
     });
 
     if (!session || session.expiresAt < new Date()) {
@@ -67,8 +72,13 @@ export class AuthService {
   }
 
   public static async invalidateRefreshToken(token: string): Promise<void> {
-    await prisma.activeSession.delete({
-      where: { token },
+    await prisma.activeSession.deleteMany({
+      where: {
+        OR: [
+          { sessionToken: token },
+          { token: token }, // Legacy field support
+        ],
+      },
     });
   }
 }

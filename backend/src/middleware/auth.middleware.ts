@@ -1,9 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service';
-import { PrismaClient, User } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
+import { User } from '@prisma/client';
+import prisma from '../utils/database.util';
 import { AuthenticatedRequest } from '../types/express';
 
 export const authenticate = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<Response | void> => {
@@ -29,3 +27,6 @@ export const authenticate = async (req: AuthenticatedRequest, res: Response, nex
   req.user = user;
   next();
 };
+
+// Alias for backward compatibility
+export const authenticateToken = authenticate;

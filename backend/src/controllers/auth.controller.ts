@@ -1,12 +1,10 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { AuthService } from '../services/auth.service';
 import { EmailService } from '../services/email.service';
 import { AuditService } from '../services/audit.service';
 import { generateOtp, generateSecureToken } from '../utils/crypto.util';
 import { log } from '../utils/logging.util';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/database.util';
 
 export class AuthController {
   public static async register(req: Request, res: Response): Promise<Response> {

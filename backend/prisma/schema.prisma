@@ -10,32 +10,275 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================
+// USERS TABLE
+// ============================================
 model User {
-  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
-  email                     String    @unique
-  name                      String?
-  password                  String
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  name              String?
+  email             String    @unique
+  password          String    @map("password_hash") // Maps to password_hash in DB
+  creditBalance     Float     @default(0) @map("credit_balance")
+  isVerified        Boolean   @default(false) @map("is_verified")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  lastLogin         DateTime? @map("last_login")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  emailVerified             Boolean   @default(false)
-  verificationToken         String?
-  verificationTokenExpires  DateTime?
+  // Legacy auth fields (kept for backward compatibility)
+  emailVerified             Boolean   @default(false) @map("email_verified")
+  verificationToken         String?  @map("verification_token")
+  verificationTokenExpires  DateTime? @map("verification_token_expires")
+  passwordResetToken        String?  @map("password_reset_token")
+  passwordResetTokenExpires DateTime? @map("password_reset_token_expires")
+  failedLoginAttempts       Int      @default(0) @map("failed_login_attempts")
+  lockoutUntil              DateTime? @map("lockout_until")
+  twoFactorSecret           String?  @map("two_factor_secret")
+  isTwoFactorEnabled        Boolean  @default(false) @map("is_two_factor_enabled")
 
-  passwordResetToken        String?
-  passwordResetTokenExpires DateTime?
+  // Relations
+  ownedGroups              SubscriptionGroup[] @relation("GroupOwner")
+  groupMemberships         GroupMembership[]
+  transactions             Transaction[]
+  withdrawalRequests      WithdrawalRequest[]
+  reviews                  Review[]
+  auditLogs                AuditLog[]
+  emailVerifications       EmailVerification[]
+  passwordResetTokens      PasswordResetToken[]
+  activeSessions           ActiveSession[]
+  subscriptions            Subscription[]
 
-  failedLoginAttempts       Int       @default(0)
-  lockoutUntil              DateTime?
-
-  twoFactorSecret           String?
-  isTwoFactorEnabled        Boolean   @default(false)
-
-  createdAt                 DateTime  @default(now())
-  updatedAt                 DateTime  @updatedAt
-
-  subscriptions             Subscription[]
-  activeSessions            ActiveSession[]
+  @@index([isVerified])
+  @@index([createdAt])
+  @@map("users")
 }
 
+// ============================================
+// SUBSCRIPTION_GROUPS TABLE
+// ============================================
+model SubscriptionGroup {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  ownerId         String    @map("owner_id") @db.ObjectId
+  owner           User      @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  name            String
+  serviceType     String    @map("service_type")
+  totalPrice      Float     @map("total_price")
+  slotsTotal      Int       @map("slots_total")
+  slotsFilled     Int       @default(0) @map("slots_filled")
+  isActive        Boolean   @default(true) @map("is_active")
+  proofDocument   String?   @map("proof_document")
+  adminApproved   Boolean   @default(false) @map("admin_approved")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  memberships           GroupMembership[]
+  encryptedCredentials  EncryptedCredential[]
+  reviews               Review[]
+
+  @@index([ownerId])
+  @@index([serviceType])
+  @@index([isActive])
+  @@index([adminApproved])
+  @@index([createdAt])
+  @@map("subscription_groups")
+}
+
+// ============================================
+// GROUP_MEMBERSHIPS TABLE
+// ============================================
+model GroupMembership {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @map("user_id") @db.ObjectId
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupId     String    @map("group_id") @db.ObjectId
+  group       SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  joinDate    DateTime  @default(now()) @map("join_date")
+  endDate     DateTime? @map("end_date")
+  shareAmount Float     @map("share_amount")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@unique([userId, groupId])
+  @@index([userId])
+  @@index([groupId])
+  @@index([isActive])
+  @@index([joinDate])
+  @@map("group_memberships")
+}
+
+// ============================================
+// TRANSACTIONS TABLE
+// ============================================
+model Transaction {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String    @map("user_id") @db.ObjectId
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String    // e.g., "credit_purchase", "withdrawal", "refund", "payment"
+  amount            Float
+  status            String    // e.g., "pending", "completed", "failed", "cancelled"
+  paymentGatewayId  String?   @map("payment_gateway_id")
+  metadata          Json?   // Store additional transaction data
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+// ============================================
+// WITHDRAWAL_REQUESTS TABLE
+// ============================================
+model WithdrawalRequest {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String    @map("user_id") @db.ObjectId
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount          Float
+  upiId           String    @map("upi_id")
+  status          String    // e.g., "pending", "processing", "completed", "rejected"
+  requestedAt     DateTime  @default(now()) @map("requested_at")
+  processedAt     DateTime? @map("processed_at")
+  cooldownExpiresAt DateTime? @map("cooldown_expires_at")
+  rejectionReason String?   @map("rejection_reason")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@index([requestedAt])
+  @@index([cooldownExpiresAt])
+  @@map("withdrawal_requests")
+}
+
+// ============================================
+// ENCRYPTED_CREDENTIALS TABLE
+// ============================================
+model EncryptedCredential {
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  groupId             String    @map("group_id") @db.ObjectId
+  group               SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  encryptedUsername   String    @map("encrypted_username")
+  encryptedPassword   String    @map("encrypted_password")
+  encryptionKeyId     String    @map("encryption_key_id")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@index([groupId])
+  @@index([encryptionKeyId])
+  @@map("encrypted_credentials")
+}
+
+// ============================================
+// REVIEWS TABLE
+// ============================================
+model Review {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @map("user_id") @db.ObjectId
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupId     String    @map("group_id") @db.ObjectId
+  group       SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  rating      Int       // 1-5 scale
+  comment     String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@unique([userId, groupId])
+  @@index([groupId])
+  @@index([userId])
+  @@index([rating])
+  @@index([createdAt])
+  @@map("reviews")
+}
+
+// ============================================
+// AUDIT_LOGS TABLE
+// ============================================
+model AuditLog {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String?   @map("user_id") @db.ObjectId
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action      String
+  tableName   String?   @map("table_name")
+  oldValues   Json?   @map("old_values")
+  newValues   Json?   @map("new_values")
+  ipAddress   String?   @map("ip_address")
+  userAgent   String?   @map("user_agent")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Legacy field for backward compatibility
+  details     Json?
+  timestamp   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([tableName])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ============================================
+// EMAIL_VERIFICATIONS TABLE
+// ============================================
+model EmailVerification {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @map("user_id") @db.ObjectId
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token       String    @unique
+  expiresAt   DateTime  @map("expires_at")
+  usedAt      DateTime? @map("used_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([usedAt])
+  @@map("email_verifications")
+}
+
+// ============================================
+// PASSWORD_RESET_TOKENS TABLE
+// ============================================
+model PasswordResetToken {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @map("user_id") @db.ObjectId
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token       String    @unique
+  expiresAt   DateTime  @map("expires_at")
+  usedAt      DateTime? @map("used_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([usedAt])
+  @@map("password_reset_tokens")
+}
+
+// ============================================
+// ACTIVE_SESSIONS TABLE
+// ============================================
+model ActiveSession {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @map("user_id") @db.ObjectId
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionToken String   @unique @map("session_token")
+  expiresAt   DateTime  @map("expires_at")
+  ipAddress   String?   @map("ip_address")
+  userAgent   String?   @map("user_agent")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Legacy field for backward compatibility
+  token       String?
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("active_sessions")
+}
+
+// ============================================
+// LEGACY: Subscription model (kept for backward compatibility)
+// ============================================
 model Subscription {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   name        String
@@ -46,25 +289,4 @@ model Subscription {
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-}
-
-model AuditLog {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  action      String
-  userId      String?   @db.ObjectId
-  details     String?
-  ipAddress   String?
-  userAgent   String?
-  timestamp   DateTime  @default(now())
-}
-
-model ActiveSession {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String    @db.ObjectId
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token       String    @unique
-  ipAddress   String?
-  userAgent   String?
-  expiresAt   DateTime
-  createdAt   DateTime  @default(now())
 }

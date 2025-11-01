@@ -17,6 +17,7 @@ model User {
   password                  String
   creditBalance             Float     @default(0)
   emailVerified             Boolean   @default(false)
+  isActive                  Boolean   @default(true)
   createdAt                 DateTime  @default(now())
   lastLogin                 DateTime?
 

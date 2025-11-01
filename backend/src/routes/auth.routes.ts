@@ -5,7 +5,7 @@ import { loginRateLimiter } from '../middleware/rateLimiter';
 const router = Router();
 
 router.post('/register', AuthController.register);
-router.get('/verify-email', AuthController.verifyEmail);
+router.post('/verify-email', AuthController.verifyEmail);
 router.post('/login', loginRateLimiter, AuthController.login);
 router.post('/forgot-password', AuthController.forgotPassword);
 router.get('/reset-password/:token', AuthController.validateResetToken);

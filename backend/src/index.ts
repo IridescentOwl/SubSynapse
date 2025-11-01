@@ -30,17 +30,12 @@ app.get('/', (req, res) => {
   res.send('Server is running!');
 });
 
-app.get('/users', async (req, res) => {
-  const users = await prisma.user.findMany();
-  res.json(users);
-});
-
 // Use the auth routes
 app.use('/api/auth', authRoutes);
 
-// Use the profile routes
-import profileRoutes from './routes/profile.routes';
-app.use('/api/profile', profileRoutes);
+// Use the user routes
+import userRoutes from './routes/user.routes';
+app.use('/api/users', userRoutes);
 
 // Use the subscription group routes
 import subscriptionGroupRoutes from './routes/subscriptionGroup.routes';

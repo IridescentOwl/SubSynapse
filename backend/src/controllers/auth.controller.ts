@@ -59,7 +59,7 @@ export class AuthController {
   }
 
   public static async verifyEmail(req: Request, res: Response): Promise<Response> {
-    const { token } = req.query;
+    const { token } = req.body;
 
     if (!token || typeof token !== 'string') {
       return res.status(400).json({ message: 'Verification token is required' });

@@ -14,5 +14,6 @@ router.put('/:id', authenticate, SubscriptionGroupController.updateGroup);
 router.delete('/:id/leave', authenticate, SubscriptionGroupController.leaveGroup);
 router.put('/:id/revoke-access', authenticate, SubscriptionGroupController.revokeAccess);
 router.get('/:id/members', authenticate, SubscriptionGroupController.getGroupMembers);
+router.get('/:id/rating', SubscriptionGroupController.getGroupRating);
 
 export default router;

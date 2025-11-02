@@ -307,4 +307,28 @@ export class SubscriptionGroupController {
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
+
+  public static async getGroupRating(req: Request, res: Response): Promise<Response> {
+    const groupId = req.params.id;
+
+    try {
+      const reviews = await prisma.review.findMany({
+        where: {
+          groupId,
+        },
+      });
+
+      if (reviews.length === 0) {
+        return res.status(200).json({ averageRating: 0 });
+      }
+
+      const totalRating = reviews.reduce((acc, review) => acc + review.rating, 0);
+      const averageRating = totalRating / reviews.length;
+
+      return res.status(200).json({ averageRating });
+    } catch (error) {
+      log('error', 'An error occurred while fetching group rating', { error });
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  }
 }

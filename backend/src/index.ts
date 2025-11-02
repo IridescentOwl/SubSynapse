@@ -49,6 +49,10 @@ app.use('/api/payments', paymentsRoutes);
 import credentialRoutes from './routes/credential.routes';
 app.use('/api/credentials', credentialRoutes);
 
+// Use the review routes
+import reviewRoutes from './routes/review.routes';
+app.use('/api/reviews', reviewRoutes);
+
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

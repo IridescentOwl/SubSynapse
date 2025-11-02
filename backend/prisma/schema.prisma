@@ -127,6 +127,7 @@ model Review {
 model AuditLog {
   id                        String    @id @default(auto()) @map("_id") @db.ObjectId
   userId                    String?   @db.ObjectId
+  adminId                   String?   @db.ObjectId
   action                    String
   tableName                 String?
   oldValues                 String? // JSON string
@@ -135,6 +136,7 @@ model AuditLog {
   createdAt                 DateTime  @default(now())
 
   user                      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  admin                     Admin?    @relation(fields: [adminId], references: [id], onDelete: SetNull)
 }
 
 model EmailVerification {
@@ -191,4 +193,15 @@ model CredentialAccessLog {
 
   group SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   user  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Admin {
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  email               String    @unique
+  password            String
+  twoFactorSecret     String?
+  isTwoFactorEnabled  Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  auditLogs           AuditLog[]
 }

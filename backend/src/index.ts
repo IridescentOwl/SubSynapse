@@ -53,6 +53,10 @@ app.use('/api/credentials', credentialRoutes);
 import reviewRoutes from './routes/review.routes';
 app.use('/api/reviews', reviewRoutes);
 
+// Use the admin routes
+import adminRoutes from './routes/admin.routes';
+app.use('/api/admin', adminRoutes);
+
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

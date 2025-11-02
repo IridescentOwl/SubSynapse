@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma.util';
 import { AuthenticatedRequest } from '../types/express';
 import { log } from '../utils/logging.util';
 import PaymentsService from '../services/payments.service';
+import { EmailService } from '../services/email.service';
 import crypto from 'crypto';
-
-const prisma = new PrismaClient();
 
 export class SubscriptionGroupController {
   public static async createGroup(req: AuthenticatedRequest, res: Response): Promise<Response> {
@@ -152,6 +151,11 @@ export class SubscriptionGroupController {
         },
       });
 
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user) {
+        await EmailService.sendGroupJoinedEmail(user.email, group.name);
+      }
+
       return res.status(200).json({ message: 'Successfully joined group' });
     } catch (error) {
       log('error', 'An error occurred while joining a group', { error });
@@ -237,6 +241,11 @@ export class SubscriptionGroupController {
         const refundPercentage = timeRemaining / subscriptionDuration;
         const refundAmount = membership.shareAmount * refundPercentage;
         await PaymentsService.credit(userId, refundAmount, `refund_group_${groupId}`);
+      }
+
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user) {
+        await EmailService.sendGroupLeftEmail(user.email, membership.group.name);
       }
 
       return res.status(200).json({ message: 'Successfully left group' });

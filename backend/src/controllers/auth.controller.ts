@@ -50,6 +50,8 @@ export class AuthController {
         },
       });
 
+      await EmailService.sendWelcomeEmail(email, name);
+
       await EmailService.sendVerificationEmail(email, verificationToken);
 
       await AuditService.log('USER_REGISTER', user.id, JSON.stringify(user), req.ip, 'User');
@@ -233,6 +235,9 @@ export class AuthController {
       const user = await prisma.user.findUnique({ where: { id: resetRecord.userId } });
       if (user) {
         await AuditService.log('PASSWORD_RESET_SUCCESS', user.id, `User ${user.email} successfully reset their password`, req.ip, 'User');
+        if (user.phone) {
+          await (new (require('../services/sms.service')).SmsService()).sendSms(user.phone, 'Your password has been reset successfully.');
+        }
       }
 
       return res.status(200).json({ message: 'Password reset successfully' });

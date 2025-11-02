@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import Razorpay from 'razorpay';
 import razorpay from '../utils/razorpay.util';
-
+import prisma from '../utils/prisma.util';
 import PaymentsService from '../services/payments.service';
 import { AuditService } from '../services/audit.service';
+import { EmailService } from '../services/email.service';
 
 class PaymentsController {
 
@@ -27,6 +28,12 @@ class PaymentsController {
     try {
       const withdrawalRequest = await PaymentsService.requestWithdrawal(userId, amount, upiId);
       await AuditService.log('WITHDRAWAL_REQUEST', userId, JSON.stringify(withdrawalRequest), req.ip, 'WithdrawalRequest');
+
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user) {
+        await EmailService.sendWithdrawalConfirmationEmail(user.email, amount);
+      }
+
       res.status(200).json(withdrawalRequest);
     } catch (error) {
       res.status(500).json({ message: 'Error creating withdrawal request' });
@@ -77,6 +84,11 @@ class PaymentsController {
           const order = await razorpay.orders.fetch(order_id);
           const userId = order.notes.user_id;
           await PaymentsService.addCredits(userId, amount / 100, id);
+
+          const user = await prisma.user.findUnique({ where: { id: userId } });
+          if (user) {
+            await EmailService.sendPaymentConfirmationEmail(user.email, amount / 100, id);
+          }
         }
         res.status(200).json({ message: 'Webhook received' });
       } else {

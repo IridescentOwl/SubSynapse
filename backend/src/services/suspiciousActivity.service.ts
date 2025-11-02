@@ -1,7 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma.util';
 import { log } from '../utils/logging.util';
-
-const prisma = new PrismaClient();
+import { EmailService } from './email.service';
 
 export class SuspiciousActivityService {
   public static async checkForSuspiciousActivity(): Promise<void> {
@@ -35,7 +34,10 @@ export class SuspiciousActivityService {
 
     if (failedLogins.length > 0) {
       log('warn', 'Suspicious activity detected: multiple failed logins from the same IP address.', { failedLogins });
-      // In a real application, you would send an alert here.
+      const adminEmail = process.env.ADMIN_EMAIL;
+      if (adminEmail) {
+        await EmailService.sendSuspiciousActivityAlert(adminEmail, 'Multiple failed logins from the same IP address.');
+      }
     }
   }
 
@@ -62,7 +64,10 @@ export class SuspiciousActivityService {
 
     if (rapidRequests.length > 0) {
         log('warn', 'Suspicious activity detected: rapid requests from the same IP address.', { rapidRequests });
-        // In a real application, you would send an alert here.
+        const adminEmail = process.env.ADMIN_EMAIL;
+        if (adminEmail) {
+            await EmailService.sendSuspiciousActivityAlert(adminEmail, 'Rapid requests from the same IP address.');
+        }
     }
   }
 }

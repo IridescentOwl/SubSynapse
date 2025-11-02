@@ -14,6 +14,8 @@ model User {
   id                        String    @id @default(auto()) @map("_id") @db.ObjectId
   name                      String
   email                     String    @unique
+  phone                     String?
+  avatar                    String?
   password                  String
   creditBalance             Float     @default(0)
   emailVerified             Boolean   @default(false)
@@ -26,6 +28,8 @@ model User {
 
   twoFactorSecret           String?
   isTwoFactorEnabled        Boolean   @default(false)
+
+  notifications             Json?
 
   updatedAt                 DateTime  @updatedAt
 

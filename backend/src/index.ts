@@ -6,6 +6,7 @@ import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/auth.routes';
 import { defaultRateLimiter } from './middleware/rateLimiter.middleware';
 import { startSuspiciousActivityCheck } from './cron';
+import { startDailyChecks } from './cron/dailyChecks';
 
 dotenv.config();
 
@@ -64,8 +65,13 @@ app.use('/api/reviews', reviewRoutes);
 import adminRoutes from './routes/admin.routes';
 app.use('/api/admin', adminRoutes);
 
+// Use the unsubscribe routes
+import unsubscribeRoutes from './routes/unsubscribe.routes';
+app.use('/api/unsubscribe', unsubscribeRoutes);
+
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
   startSuspiciousActivityCheck();
+  startDailyChecks();
 });

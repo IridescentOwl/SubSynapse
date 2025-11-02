@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthService } from '../services/auth.service';
 import { EmailService } from '../services/email.service';
+import { EncryptionService } from '../services/encryption.service';
 import { AuditService } from '../services/audit.service';
 import { generateOtp, generateSecureToken } from '../utils/crypto.util';
 import { log } from '../utils/logging.util';
@@ -10,10 +11,10 @@ const prisma = new PrismaClient();
 
 export class AuthController {
   public static async register(req: Request, res: Response): Promise<Response> {
-    const { email, password, name } = req.body;
+    const { email, password, name, website } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+    if (website) {
+        return res.status(400).json({ message: 'Bot detected' });
     }
 
     // Thapar-exclusive email validation
@@ -31,10 +32,12 @@ export class AuthController {
       const verificationToken = generateOtp();
       const verificationTokenExpires = new Date(new Date().getTime() + 24 * 60 * 60 * 1000); // 1 day
 
+      const encryptedName = EncryptionService.encrypt(name);
+
       const user = await prisma.user.create({
         data: {
           email,
-          name,
+          name: encryptedName,
           password: hashedPassword,
         },
       });
@@ -106,10 +109,6 @@ export class AuthController {
   public static async login(req: Request, res: Response): Promise<Response> {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
-
     try {
       const user = await prisma.user.findUnique({ where: { email } });
 
@@ -163,10 +162,10 @@ export class AuthController {
   }
 
   public static async forgotPassword(req: Request, res: Response): Promise<Response> {
-    const { email } = req.body;
+    const { email, website } = req.body;
 
-    if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
+    if (website) {
+        return res.status(400).json({ message: 'Bot detected' });
     }
 
     try {
@@ -200,10 +199,6 @@ export class AuthController {
   public static async resetPassword(req: Request, res: Response): Promise<Response> {
     const { token } = req.params;
     const { password } = req.body;
-
-    if (!password) {
-      return res.status(400).json({ message: 'New password is required' });
-    }
 
     try {
       const resetRecord = await prisma.passwordResetToken.findFirst({

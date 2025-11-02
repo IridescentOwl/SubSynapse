@@ -1,15 +1,16 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller';
-import { loginRateLimiter } from '../middleware/rateLimiter';
+import { strictRateLimiter } from '../middleware/rateLimiter.middleware';
+import { validateRegistration, validateLogin, validateForgotPassword, validateResetPassword } from '../middleware/validation.middleware';
 
 const router = Router();
 
-router.post('/register', AuthController.register);
-router.post('/verify-email', AuthController.verifyEmail);
-router.post('/login', loginRateLimiter, AuthController.login);
-router.post('/forgot-password', AuthController.forgotPassword);
-router.get('/reset-password/:token', AuthController.validateResetToken);
-router.post('/reset-password/:token', AuthController.resetPassword);
+router.post('/register', strictRateLimiter, validateRegistration, AuthController.register);
+router.post('/verify-email', strictRateLimiter, AuthController.verifyEmail);
+router.post('/login', strictRateLimiter, validateLogin, AuthController.login);
+router.post('/forgot-password', strictRateLimiter, validateForgotPassword, AuthController.forgotPassword);
+router.get('/reset-password/:token', strictRateLimiter, AuthController.validateResetToken);
+router.post('/reset-password/:token', strictRateLimiter, validateResetPassword, AuthController.resetPassword);
 router.post('/logout', AuthController.logout);
 router.post('/refresh-token', AuthController.refreshToken);
 

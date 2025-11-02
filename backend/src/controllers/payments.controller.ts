@@ -3,6 +3,7 @@ import Razorpay from 'razorpay';
 import razorpay from '../utils/razorpay.util';
 
 import PaymentsService from '../services/payments.service';
+import { AuditService } from '../services/audit.service';
 
 class PaymentsController {
 
@@ -25,6 +26,7 @@ class PaymentsController {
 
     try {
       const withdrawalRequest = await PaymentsService.requestWithdrawal(userId, amount, upiId);
+      await AuditService.log('WITHDRAWAL_REQUEST', userId, JSON.stringify(withdrawalRequest), req.ip, 'WithdrawalRequest');
       res.status(200).json(withdrawalRequest);
     } catch (error) {
       res.status(500).json({ message: 'Error creating withdrawal request' });

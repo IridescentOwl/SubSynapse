@@ -1,8 +1,11 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/auth.routes';
+import { defaultRateLimiter } from './middleware/rateLimiter.middleware';
+import { startSuspiciousActivityCheck } from './cron';
 
 dotenv.config();
 
@@ -15,6 +18,10 @@ app.use(cors({
   origin: 'http://localhost:3000', // Allow the frontend origin
   credentials: true, // Allow cookies and authorization headers
 }));
+
+app.use(helmet());
+
+app.use(defaultRateLimiter);
 
 import { log } from './utils/logging.util';
 
@@ -60,4 +67,5 @@ app.use('/api/admin', adminRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
+  startSuspiciousActivityCheck();
 });

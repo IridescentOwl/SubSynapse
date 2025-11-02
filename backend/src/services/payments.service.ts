@@ -1,5 +1,6 @@
 import razorpay from '../utils/razorpay.util';
 import prisma from '../utils/prisma.util';
+import { EncryptionService } from './encryption.service';
 
 class PaymentsService {
   static async createOrder(amount: number, currency: string, userId: string) {
@@ -58,11 +59,13 @@ class PaymentsService {
       }
     }
 
+    const encryptedUpiId = EncryptionService.encrypt(upiId);
+
     const withdrawalRequest = await prisma.withdrawalRequest.create({
       data: {
         userId,
         amount,
-        upiId,
+        upiId: encryptedUpiId,
         status: 'pending',
       },
     });
@@ -93,7 +96,11 @@ class PaymentsService {
     const withdrawalRequests = await prisma.withdrawalRequest.findMany({
       where: { userId },
     });
-    return withdrawalRequests;
+
+    return withdrawalRequests.map((request) => ({
+      ...request,
+      upiId: EncryptionService.decrypt(request.upiId),
+    }));
   }
 
   static async approveWithdrawal(withdrawalId: string) {

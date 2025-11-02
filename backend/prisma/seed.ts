@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { AuthService } from '../src/services/auth.service';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
@@ -9,8 +10,25 @@ async function main() {
   await prisma.user.deleteMany();
   await prisma.subscriptionGroup.deleteMany();
   await prisma.groupMembership.deleteMany();
+  await prisma.admin.deleteMany();
 
   const password = await AuthService.hashPassword('password123');
+  const apiKey = crypto.randomBytes(32).toString('hex');
+  const hashedApiKey = await AuthService.hashPassword(apiKey);
+
+
+  // Create an admin user
+    await prisma.admin.create({
+        data: {
+            email: 'admin@thapar.edu',
+            password,
+            apiKey: hashedApiKey,
+        },
+    });
+
+  console.log(`Created admin user with email: admin@thapar.edu`);
+    console.log(`API Key: ${apiKey}`);
+
 
   // Create a user
   const user1 = await prisma.user.create({

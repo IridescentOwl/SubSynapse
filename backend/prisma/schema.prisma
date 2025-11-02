@@ -199,6 +199,7 @@ model Admin {
   id                  String    @id @default(auto()) @map("_id") @db.ObjectId
   email               String    @unique
   password            String
+  apiKey              String    @unique
   twoFactorSecret     String?
   isTwoFactorEnabled  Boolean   @default(false)
   createdAt           DateTime  @default(now())

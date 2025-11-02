@@ -1,4 +1,5 @@
 import prisma from '../utils/prisma.util';
+import { EncryptionService } from './encryption.service';
 
 const updatableUserFields = ['name'];
 
@@ -10,6 +11,10 @@ export class UserService {
         obj[key] = data[key];
         return obj;
       }, {});
+
+    if (filteredData.name) {
+        filteredData.name = EncryptionService.encrypt(filteredData.name);
+    }
 
     return prisma.user.update({
       where: { id: userId },

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { EncryptionService } from '../services/encryption.service';
+import { AuditService } from '../services/audit.service';
 import { AuthenticatedRequest } from '../types/express';
 
 const prisma = new PrismaClient();
@@ -30,6 +31,8 @@ export class CredentialController {
           credentials: encryptedCredentials,
         },
       });
+
+      await AuditService.log('CREDENTIALS_STORED', userId, JSON.stringify(savedCredentials), req.ip, 'Credential');
 
       res.status(201).json(savedCredentials);
     } catch (error) {
@@ -95,6 +98,8 @@ export class CredentialController {
         },
       });
 
+      await AuditService.log('CREDENTIALS_ACCESSED', userId, JSON.stringify({ groupId }), req.ip, 'Credential');
+
       res.json({ credentials: decryptedCredentials });
     } catch (error) {
       console.error(error);
@@ -123,6 +128,8 @@ export class CredentialController {
         data: { credentials: encryptedCredentials },
       });
 
+      await AuditService.log('CREDENTIALS_UPDATED', userId, JSON.stringify(updatedCredentials), req.ip, 'Credential');
+
       res.json(updatedCredentials);
     } catch (error) {
       console.error(error);
@@ -146,6 +153,8 @@ export class CredentialController {
       await prisma.credential.delete({
         where: { groupId },
       });
+
+      await AuditService.log('CREDENTIALS_DELETED', userId, JSON.stringify({ groupId }), req.ip, 'Credential');
 
       res.status(204).send();
     } catch (error) {

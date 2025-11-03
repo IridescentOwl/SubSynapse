@@ -3,12 +3,27 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import * as Sentry from '@sentry/node';
 import authRoutes from './routes/auth.routes';
 import { defaultRateLimiter } from './middleware/rateLimiter.middleware';
 import { startSuspiciousActivityCheck } from './cron';
 import { startDailyChecks } from './cron/dailyChecks';
 
 dotenv.config();
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  integrations: [
+    // enable HTTP calls tracing
+    new Sentry.Integrations.Http({ tracing: true }),
+    // enable Express.js middleware tracing
+    new Sentry.Integrations.Express({ app: express() }),
+  ],
+  // Performance Monitoring
+  tracesSampleRate: 1.0, //  Capture 100% of the transactions
+  // Set sampling rate for profiling - this is relative to tracesSampleRate
+  profilesSampleRate: 1.0,
+});
 
 const prisma = new PrismaClient();
 
@@ -69,6 +84,27 @@ app.use('/api/admin', adminRoutes);
 import unsubscribeRoutes from './routes/unsubscribe.routes';
 app.use('/api/unsubscribe', unsubscribeRoutes);
 
+// Swagger API documentation
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './utils/swagger.util';
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// The Sentry request handler must be the first middleware on the app
+app.use(Sentry.Handlers.requestHandler());
+
+// TracingHandler creates a trace for every incoming request
+app.use(Sentry.Handlers.tracingHandler());
+
+// The Sentry error handler must be registered before any other error middleware and after all controllers
+app.use(Sentry.Handlers.errorHandler());
+
+// Optional fallthrough error handler
+app.use(function onError(err, req, res, next) {
+  // The error id is attached to `res.sentry` to be returned
+  // and optionally displayed to the user for support.
+  res.statusCode = 500;
+  res.end(res.sentry + "\n");
+});
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

@@ -35,6 +35,12 @@
   "dependencies": {
     "@prisma/client": "^6.18.0",
     "@sendgrid/mail": "^8.1.6",
+    "@sentry/node": "^10.22.0",
+    "@sentry/profiling-node": "^10.22.0",
+    "@types/redis": "^4.0.10",
+    "@types/sharp": "^0.31.1",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
@@ -46,6 +52,10 @@
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.10",
     "razorpay": "^2.9.6",
+    "redis": "^5.9.0",
+    "sharp": "^0.34.4",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "twilio": "^5.10.4"
   }
 }

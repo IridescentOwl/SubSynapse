@@ -65,6 +65,9 @@ model SubscriptionGroup {
   reviews                   Review[]
   sessions                  Session[]
   credentialAccessLogs      CredentialAccessLog[]
+
+  @@index([ownerId])
+  @@index([serviceType, isActive, adminApproved])
 }
 
 model GroupMembership {
@@ -80,6 +83,8 @@ model GroupMembership {
   group                     SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@unique([userId, groupId])
+  @@index([userId, isActive])
+  @@index([groupId])
 }
 
 model Transaction {
@@ -92,6 +97,11 @@ model Transaction {
   createdAt                 DateTime  @default(now())
 
   user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([paymentGatewayId])
+  @@index([status])
+  @@index([type])
 }
 
 model WithdrawalRequest {
@@ -105,6 +115,9 @@ model WithdrawalRequest {
   cooldownExpiresAt         DateTime?
 
   user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, requestedAt])
+  @@index([status])
 }
 
 model Credential {

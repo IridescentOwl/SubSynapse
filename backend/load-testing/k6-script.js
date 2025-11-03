@@ -25,6 +25,51 @@ export default function () {
 
   sleep(1);
 
+  // Test the addCredits endpoint
+  const authToken = login('testuser@thapar.edu', 'password123');
+  if (authToken) {
+    const addCreditsPayload = JSON.stringify({
+      amount: 100,
+      paymentGatewayId: `txn_${__VU}_${__ITER}`,
+    });
+
+    const addCreditsRes = http.post(
+      `${API_BASE_URL}/payments/add-credits`,
+      addCreditsPayload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    check(addCreditsRes, {
+      'addCredits: status was 200': (r) => r.status === 200,
+    });
+
+    sleep(1);
+
+    // Test the withdraw-request endpoint
+    const withdrawRequestPayload = JSON.stringify({
+      amount: 50,
+      upiId: 'test@upi',
+    });
+
+    const withdrawRequestRes = http.post(
+      `${API_BASE_URL}/payments/withdraw-request`,
+      withdrawRequestPayload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    check(withdrawRequestRes, {
+      'withdraw-request: status was 200': (r) => r.status === 200,
+    });
+  }
+
   // Test the joinGroup endpoint (requires a valid group ID and authenticated user)
   // In a real test, you would fetch a valid group ID from the getGroups response
   // and use a pre-registered user's credentials.

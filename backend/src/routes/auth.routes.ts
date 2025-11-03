@@ -198,6 +198,24 @@ router.post('/reset-password/:token', strictRateLimiter, validateResetPassword, 
  *     responses:
  *       '200':
  *         description: User logged out successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Logged out successfully
+ *       '401':
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Unauthorized
  */
 router.post('/logout', AuthController.logout);
 
@@ -228,8 +246,17 @@ router.post('/logout', AuthController.logout);
  *               properties:
  *                 accessToken:
  *                   type: string
+ *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
  *       '401':
  *         description: Invalid refresh token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Invalid refresh token
  */
 router.post('/refresh-token', AuthController.refreshToken);
 

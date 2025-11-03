@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.routes';
 import { defaultRateLimiter } from './middleware/rateLimiter.middleware';
 import { startSuspiciousActivityCheck } from './cron';
 import { startDailyChecks } from './cron/dailyChecks';
+import { AuthenticatedRequest } from './types/express';
 
 dotenv.config();
 
@@ -44,7 +45,10 @@ import { log } from './utils/logging.util';
 app.use(express.json());
 
 // Logging middleware
-app.use((req, res, next) => {
+app.use((req: AuthenticatedRequest, res, next) => {
+  if (req.user) {
+    Sentry.setUser({ id: req.user.id, email: req.user.email });
+  }
   log('info', `Incoming request: ${req.method} ${req.url}`, { body: req.body });
   next();
 });

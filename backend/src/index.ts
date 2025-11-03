@@ -80,6 +80,10 @@ app.use('/api/reviews', reviewRoutes);
 import adminRoutes from './routes/admin.routes';
 app.use('/api/admin', adminRoutes);
 
+// Use the health check routes
+import healthRoutes from './routes/health.routes';
+app.use('/api', healthRoutes);
+
 // Use the unsubscribe routes
 import unsubscribeRoutes from './routes/unsubscribe.routes';
 app.use('/api/unsubscribe', unsubscribeRoutes);

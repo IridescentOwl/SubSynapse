@@ -1,25 +1,29 @@
-# Best Practice: Use a specific, lightweight Node.js image.
-# 'alpine' is a minimal version, making your image smaller.
-FROM node:18-alpine
+# Stage 1: Build the React application
+FROM node:18-alpine AS builder
 
-# Set the working directory inside the container.
 WORKDIR /app
 
-# Best Practice: Copy package files first and install dependencies.
-# This takes advantage of Docker's layer caching. If these files don't change,
-# Docker won't reinstall dependencies every time you build, which is much faster.
+# Copy package files and install dependencies
 COPY package*.json ./
 RUN npm install
 
-# Now, copy the rest of your application's source code.
+# Copy the rest of the application's source code
 COPY . .
 
-# Best Practice: Vite's default dev server port is 5173. Expose it.
-EXPOSE 5173
+# Build the application
+RUN npm run build
 
-# The command to start the development server.
-# The '--' is to pass the '--host' flag directly to Vite.
-# The '--host' flag is crucial for Docker, as it tells Vite to listen
-# on all network interfaces, not just localhost, making it accessible
-# from outside the container.
-CMD [ "npm", "run", "dev", "--", "--host" ]
+# Stage 2: Serve the application with Nginx
+FROM nginx:stable-alpine
+
+# Copy the build output from the builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy the nginx config file
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 80
+EXPOSE 80
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]

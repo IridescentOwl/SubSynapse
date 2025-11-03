@@ -12,7 +12,10 @@ dist
 dist-ssr
 *.local
 
-
+# Environment variables
+.env.production
+.env.development
+.env.local
 
 #myfiles 
 roadmap.txt

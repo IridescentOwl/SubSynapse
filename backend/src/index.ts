@@ -46,6 +46,19 @@ import paymentRoutes from './routes/payment.routes';
 app.use('/api/payments', paymentRoutes);
 
 
+// Use the credentials routes
+import credentialsRoutes from './routes/credentials.route';
+app.use('/api/credentials', credentialsRoutes);
+
+// Use the session routes
+import sessionRoutes from './routes/session.route';
+app.use('/api/sessions', sessionRoutes);
+
+import { revokeInactiveSessions } from './services/revocation.service';
+
+setInterval(revokeInactiveSessions, 60 * 60 * 1000); // 1 hour
+
+
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });

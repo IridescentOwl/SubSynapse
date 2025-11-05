@@ -105,7 +105,6 @@ model EncryptedCredentials {
   groupId                   String    @db.ObjectId @unique
   encryptedUsername         String
   encryptedPassword         String
-  encryptionKeyId           String
   createdAt                 DateTime  @default(now())
 
   group                     SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)

@@ -41,6 +41,10 @@ app.use('/api/users', userRoutes);
 import subscriptionGroupRoutes from './routes/subscriptionGroup.routes';
 app.use('/api/subscription-groups', subscriptionGroupRoutes);
 
+// Use the payment routes
+import paymentRoutes from './routes/payment.routes';
+app.use('/api/payments', paymentRoutes);
+
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

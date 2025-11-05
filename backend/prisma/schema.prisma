@@ -51,6 +51,7 @@ model SubscriptionGroup {
   isActive                  Boolean   @default(true)
   proofDocument             String?
   adminApproved             Boolean   @default(false)
+  status                    String    @default("open") // open, full, failed, completed
   createdAt                 DateTime  @default(now())
 
   owner                     User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)

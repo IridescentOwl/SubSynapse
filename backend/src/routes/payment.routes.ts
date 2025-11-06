@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { PaymentController } from '../controllers/payment.controller';
 import { authenticate } from '../middleware/auth.middleware';
-import { admin } from '../middleware/admin.middleware';
 
 const router = Router();
 const paymentController = new PaymentController();
@@ -12,7 +11,7 @@ router.post('/withdraw-request', authenticate, paymentController.withdrawRequest
 router.get('/withdrawal-history', authenticate, paymentController.getWithdrawalHistory);
 
 // Admin route
-router.put('/withdraw/:id/approve', authenticate, admin, paymentController.approveWithdrawal);
+router.put('/withdraw/:id/approve', authenticate, paymentController.approveWithdrawal);
 
 // Webhook
 router.post('/webhook', paymentController.handleWebhook);

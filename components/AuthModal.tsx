@@ -7,7 +7,7 @@ interface AuthModalProps {
   onClose: () => void;
 }
 
-type AuthView = 'login' | 'register' | 'forgotPassword' | 'forgotPasswordSuccess';
+type AuthView = 'login' | 'register' | 'registerOTP' | 'forgotPassword' | 'forgotPasswordOTP' | 'resetPassword' | 'forgotPasswordSuccess';
 
 const FormInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label: string }> = ({ label, ...props }) => (
     <div>
@@ -21,10 +21,10 @@ const FormInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label:
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [view, setView] = useState<AuthView>('login');
-  const [formState, setFormState] = useState({ name: '', email: '', password: '' });
+  const [formState, setFormState] = useState({ name: '', email: '', password: '', otp: '', newPassword: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login, register, forgotPassword } = useAuth();
+  const { login, register, sendSignupOTP, verifySignupOTP, forgotPassword, sendForgotPasswordOTP, verifyForgotPasswordOTPOnly, verifyForgotPasswordOTP } = useAuth();
 
   if (!isOpen) return null;
   
@@ -40,10 +40,26 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
         if (view === 'login') {
             await login(formState.email, formState.password);
+            onClose();
         } else if (view === 'register') {
-            await register(formState.name, formState.email, formState.password);
+            // Send OTP for signup
+            await sendSignupOTP(formState.name, formState.email, formState.password);
+            setView('registerOTP');
+        } else if (view === 'registerOTP') {
+            // Verify OTP and complete signup
+            await verifySignupOTP(formState.email, formState.otp);
+            onClose();
         } else if (view === 'forgotPassword') {
-            await forgotPassword(formState.email);
+            // Send OTP for forgot password
+            await sendForgotPasswordOTP(formState.email);
+            setView('forgotPasswordOTP');
+        } else if (view === 'forgotPasswordOTP') {
+            // Verify OTP before moving to reset password view
+            await verifyForgotPasswordOTPOnly(formState.email, formState.otp);
+            setView('resetPassword');
+        } else if (view === 'resetPassword') {
+            // Verify OTP and reset password
+            await verifyForgotPasswordOTP(formState.email, formState.otp, formState.newPassword);
             setView('forgotPasswordSuccess');
         }
     } catch (err: any) {
@@ -56,18 +72,135 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const handleViewChange = (newView: AuthView) => {
     setView(newView);
     setError(null);
-    setFormState({ name: '', email: '', password: '' });
+    setFormState({ name: '', email: '', password: '', otp: '', newPassword: '' });
   }
 
   const renderContent = () => {
       if (view === 'forgotPasswordSuccess') {
           return (
               <div className="text-center">
-                  <h2 className="text-2xl font-bold text-white mb-4">Check Your Email</h2>
-                  <p className="text-slate-300 mb-6">If an account with that email exists, we've sent instructions to reset your password.</p>
+                  <h2 className="text-2xl font-bold text-white mb-4">Password Reset Successful</h2>
+                  <p className="text-slate-300 mb-6">Your password has been reset successfully. You can now login with your new password.</p>
                   <button onClick={() => handleViewChange('login')} className="font-semibold text-sky-300 hover:text-sky-200">
                       &larr; Back to Login
                   </button>
+              </div>
+          )
+      }
+
+      if (view === 'registerOTP') {
+          return (
+              <div className="text-center">
+                  <h2 className="text-2xl font-bold text-white mb-4">Verify Your Email</h2>
+                  <p className="text-slate-300 mb-6">We've sent a 6-digit OTP to <span className="font-semibold">{formState.email}</span>. Please enter it below.</p>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                      <FormInput 
+                          label="Enter OTP" 
+                          name="otp" 
+                          type="text" 
+                          placeholder="123456" 
+                          value={formState.otp} 
+                          onChange={(e) => {
+                              // Only allow numbers
+                              const value = e.target.value.replace(/\D/g, '');
+                              handleInputChange({ ...e, target: { ...e.target, value } } as any);
+                          }}
+                          required 
+                          maxLength={6}
+                          pattern="[0-9]{6}"
+                      />
+                      {error && <p className="text-sm text-red-400 text-center">{error}</p>}
+                      <div className="pt-2">
+                          <button 
+                              type="submit"
+                              className="w-full font-bold py-3 px-6 rounded-xl transition duration-300 bg-sky-500 hover:bg-sky-400 text-white disabled:bg-sky-500/50"
+                              disabled={isLoading}
+                          >
+                              {isLoading ? 'Verifying...' : 'Verify & Create Account'}
+                          </button>
+                      </div>
+                      <div className="text-center pt-2">
+                          <button type="button" onClick={() => handleViewChange('register')} className="text-sm text-slate-400 hover:text-sky-300 transition">
+                              &larr; Back
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          )
+      }
+
+      if (view === 'forgotPasswordOTP') {
+          return (
+              <div className="text-center">
+                  <h2 className="text-2xl font-bold text-white mb-4">Verify Your Email</h2>
+                  <p className="text-slate-300 mb-6">We've sent a 6-digit OTP to <span className="font-semibold">{formState.email}</span>. Please enter it below.</p>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                      <FormInput 
+                          label="Enter OTP" 
+                          name="otp" 
+                          type="text" 
+                          placeholder="123456" 
+                          value={formState.otp} 
+                          onChange={(e) => {
+                              // Only allow numbers
+                              const value = e.target.value.replace(/\D/g, '');
+                              handleInputChange({ ...e, target: { ...e.target, value } } as any);
+                          }}
+                          required 
+                          maxLength={6}
+                          pattern="[0-9]{6}"
+                      />
+                      {error && <p className="text-sm text-red-400 text-center">{error}</p>}
+                      <div className="pt-2">
+                          <button 
+                              type="submit"
+                              className="w-full font-bold py-3 px-6 rounded-xl transition duration-300 bg-sky-500 hover:bg-sky-400 text-white disabled:bg-sky-500/50"
+                              disabled={isLoading}
+                          >
+                              {isLoading ? 'Verifying...' : 'Verify OTP'}
+                          </button>
+                      </div>
+                      <div className="text-center pt-2">
+                          <button type="button" onClick={() => handleViewChange('forgotPassword')} className="text-sm text-slate-400 hover:text-sky-300 transition">
+                              &larr; Back
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          )
+      }
+
+      if (view === 'resetPassword') {
+          return (
+              <div className="text-center">
+                  <h2 className="text-2xl font-bold text-white mb-4">Reset Your Password</h2>
+                  <p className="text-slate-300 mb-6">Enter your new password below.</p>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                      <FormInput 
+                          label="New Password" 
+                          name="newPassword" 
+                          type="password" 
+                          placeholder="••••••••••••" 
+                          value={formState.newPassword} 
+                          onChange={handleInputChange} 
+                          required 
+                      />
+                      {error && <p className="text-sm text-red-400 text-center">{error}</p>}
+                      <div className="pt-2">
+                          <button 
+                              type="submit"
+                              className="w-full font-bold py-3 px-6 rounded-xl transition duration-300 bg-sky-500 hover:bg-sky-400 text-white disabled:bg-sky-500/50"
+                              disabled={isLoading}
+                          >
+                              {isLoading ? 'Resetting...' : 'Reset Password'}
+                          </button>
+                      </div>
+                      <div className="text-center pt-2">
+                          <button type="button" onClick={() => handleViewChange('forgotPasswordOTP')} className="text-sm text-slate-400 hover:text-sky-300 transition">
+                              &larr; Back
+                          </button>
+                      </div>
+                  </form>
               </div>
           )
       }
@@ -111,8 +244,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     >
                         {isLoading ? 'Processing...' : 
                             isLoginView ? 'Login' :
-                            isRegisterView ? 'Create Account' :
-                            'Send Reset Link'
+                            isRegisterView ? 'Send OTP' :
+                            'Send OTP'
                         }
                     </button>
                 </div>

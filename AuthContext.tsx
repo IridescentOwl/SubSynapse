@@ -9,6 +9,8 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  sendSignupOTP: (email: string, name: string, password: string) => Promise<void>;
+  verifySignupOTP: (email: string, otp: string) => Promise<void>;
   logout: () => void;
   addCredits: (amount: number) => Promise<void>;
   joinGroup: (subscription: MySubscription, cost: number) => Promise<void>;
@@ -17,6 +19,9 @@ interface AuthContextType {
   requestWithdrawal: (amount: number, upiId: string) => Promise<void>;
   syncUserData: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
+  sendForgotPasswordOTP: (email: string) => Promise<void>;
+  verifyForgotPasswordOTPOnly: (email: string, otp: string) => Promise<void>;
+  verifyForgotPasswordOTP: (email: string, otp: string, newPassword: string) => Promise<void>;
   changePassword: (oldPass: string, newPass: string) => Promise<void>;
   updateProfilePicture: (imageDataUrl: string) => Promise<void>;
 }
@@ -66,6 +71,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await syncUserData();
   };
 
+  const sendSignupOTP = async (email: string, name: string, password: string) => {
+    await api.sendSignupOTP(email, name, password);
+  };
+
+  const verifySignupOTP = async (email: string, otp: string) => {
+    const { user } = await api.verifySignupOTP(email, otp);
+    setUser(user);
+    await syncUserData();
+  };
+
   const logout = () => {
     api.logout();
     setUser(null);
@@ -101,6 +116,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const forgotPassword = async (email: string) => {
     await api.forgotPassword(email);
   };
+
+  const sendForgotPasswordOTP = async (email: string) => {
+    await api.sendForgotPasswordOTP(email);
+  };
+
+  const verifyForgotPasswordOTPOnly = async (email: string, otp: string) => {
+    await api.verifyForgotPasswordOTPOnly(email, otp);
+  };
+
+  const verifyForgotPasswordOTP = async (email: string, otp: string, newPassword: string) => {
+    await api.verifyForgotPasswordOTP(email, otp, newPassword);
+  };
   
   const changePassword = async (oldPass: string, newPass: string) => {
     await api.changePassword(oldPass, newPass);
@@ -120,6 +147,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isLoading,
       login,
       register,
+      sendSignupOTP,
+      verifySignupOTP,
       logout,
       addCredits,
       joinGroup,
@@ -128,6 +157,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       requestWithdrawal,
       syncUserData,
       forgotPassword,
+      sendForgotPasswordOTP,
+      verifyForgotPasswordOTPOnly,
+      verifyForgotPasswordOTP,
       changePassword,
       updateProfilePicture
     }}>

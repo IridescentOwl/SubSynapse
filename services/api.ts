@@ -10,7 +10,25 @@ let groups = [...MOCK_GROUPS];
 let memberships = [...MOCK_MEMBERSHIPS];
 let withdrawalRequests = [...MOCK_WITHDRAWAL_REQUESTS];
 
+// OTP storage: email -> { otp, expiresAt, type: 'signup' | 'forgotPassword' }
+interface OTPData {
+    otp: string;
+    expiresAt: number;
+    type: 'signup' | 'forgotPassword';
+    // For signup, store temporary user data
+    tempUserData?: { name: string; password: string };
+}
+const otpStore = new Map<string, OTPData>();
+
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+// Generate a 6-digit OTP
+const generateOTP = (): string => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// OTP expires in 10 minutes
+const OTP_EXPIRY_MS = 10 * 60 * 1000;
 
 const getAuthToken = (): string | null => localStorage.getItem('authToken');
 const setAuthToken = (token: string | null) => {
@@ -40,7 +58,75 @@ export const login = async (email: string, password: string): Promise<{ token: s
     throw new Error('Invalid credentials');
 };
 
+// Send OTP for signup
+export const sendSignupOTP = async (email: string, name: string, password: string): Promise<void> => {
+    await delay(500);
+    if (users.some(u => u.email === email)) {
+        throw new Error('User already exists');
+    }
+    
+    const otp = generateOTP();
+    otpStore.set(email, {
+        otp,
+        expiresAt: Date.now() + OTP_EXPIRY_MS,
+        type: 'signup',
+        tempUserData: { name, password }
+    });
+    
+    // In a real app, this would send an email/SMS with the OTP
+    console.log(`[MOCK] Signup OTP for ${email}: ${otp} (expires in 10 minutes)`);
+};
+
+// Verify OTP and complete signup
+export const verifySignupOTP = async (email: string, otp: string): Promise<{ token: string, user: User }> => {
+    await delay(700);
+    const otpData = otpStore.get(email);
+    
+    if (!otpData) {
+        throw new Error('OTP not found. Please request a new OTP.');
+    }
+    
+    if (otpData.type !== 'signup') {
+        throw new Error('Invalid OTP type.');
+    }
+    
+    if (Date.now() > otpData.expiresAt) {
+        otpStore.delete(email);
+        throw new Error('OTP has expired. Please request a new OTP.');
+    }
+    
+    // Trim and compare OTP (remove any whitespace)
+    if (otpData.otp !== otp.trim()) {
+        throw new Error('Invalid OTP. Please try again.');
+    }
+    
+    if (!otpData.tempUserData) {
+        throw new Error('User data not found.');
+    }
+    
+    // OTP verified, create user
+    const { name, password } = otpData.tempUserData;
+    const newUser: User = {
+        id: `user-${Date.now()}`,
+        name,
+        email,
+        creditBalance: 1000, // Welcome bonus!
+        avatarUrl: `https://api.dicebear.com/8.x/adventurer/svg?seed=${name}`,
+        memberSince: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+    };
+    users.push(newUser);
+    
+    // Clean up OTP
+    otpStore.delete(email);
+    
+    const token = createToken(newUser.id);
+    setAuthToken(token);
+    return { token, user: newUser };
+};
+
+// Legacy register function - kept for backward compatibility but now requires OTP flow
 export const register = async (name: string, email: string, password: string): Promise<{ token: string, user: User }> => {
+    // This should not be called directly anymore - use sendSignupOTP + verifySignupOTP instead
     await delay(700);
     if (users.some(u => u.email === email)) {
         throw new Error('User already exists');
@@ -179,6 +265,100 @@ export const requestWithdrawal = async (amount: number, upiId: string): Promise<
     });
 };
 
+// Send OTP for forgot password
+export const sendForgotPasswordOTP = async (email: string): Promise<void> => {
+    await delay(500);
+    const user = users.find(u => u.email === email);
+    if (!user) {
+        // Don't reveal if user exists for security
+        // Still send success message to prevent email enumeration
+        return;
+    }
+    
+    const otp = generateOTP();
+    otpStore.set(email, {
+        otp,
+        expiresAt: Date.now() + OTP_EXPIRY_MS,
+        type: 'forgotPassword'
+    });
+    
+    // In a real app, this would send an email/SMS with the OTP
+    console.log(`[MOCK] Forgot Password OTP for ${email}: ${otp} (expires in 10 minutes)`);
+};
+
+// Verify OTP for forgot password (without resetting password yet)
+export const verifyForgotPasswordOTPOnly = async (email: string, otp: string): Promise<void> => {
+    await delay(500);
+    const user = users.find(u => u.email === email);
+    if (!user) {
+        throw new Error('User not found.');
+    }
+    
+    const otpData = otpStore.get(email);
+    
+    if (!otpData) {
+        throw new Error('OTP not found. Please request a new OTP.');
+    }
+    
+    if (otpData.type !== 'forgotPassword') {
+        throw new Error('Invalid OTP type.');
+    }
+    
+    if (Date.now() > otpData.expiresAt) {
+        otpStore.delete(email);
+        throw new Error('OTP has expired. Please request a new OTP.');
+    }
+    
+    // Trim and compare OTP (remove any whitespace)
+    if (otpData.otp !== otp.trim()) {
+        throw new Error('Invalid OTP. Please try again.');
+    }
+    
+    // OTP is valid, but don't delete it yet - we'll delete it when password is reset
+    return;
+};
+
+// Verify OTP and reset password
+export const verifyForgotPasswordOTP = async (email: string, otp: string, newPassword: string): Promise<void> => {
+    await delay(1000);
+    const user = users.find(u => u.email === email);
+    if (!user) {
+        throw new Error('User not found.');
+    }
+    
+    const otpData = otpStore.get(email);
+    
+    if (!otpData) {
+        throw new Error('OTP not found. Please request a new OTP.');
+    }
+    
+    if (otpData.type !== 'forgotPassword') {
+        throw new Error('Invalid OTP type.');
+    }
+    
+    if (Date.now() > otpData.expiresAt) {
+        otpStore.delete(email);
+        throw new Error('OTP has expired. Please request a new OTP.');
+    }
+    
+    // Trim and compare OTP (remove any whitespace)
+    if (otpData.otp !== otp.trim()) {
+        throw new Error('Invalid OTP. Please try again.');
+    }
+    
+    // OTP verified, update password
+    // In a real app, this would hash the password before storing
+    console.log(`Password reset for user ${user.id}`);
+    
+    // Clean up OTP
+    otpStore.delete(email);
+    
+    // In a real app, you would update the hashed password in the database
+    // For this mock, we'll just log it
+    return;
+};
+
+// Legacy forgotPassword function - kept for backward compatibility
 export const forgotPassword = async (email: string): Promise<void> => {
     await delay(1000);
     console.log(`Password reset link sent to ${email}`);

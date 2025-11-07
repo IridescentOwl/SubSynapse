@@ -30,6 +30,22 @@ const getUserIdFromToken = (token: string): string | null => {
 
 export const login = async (email: string, password: string): Promise<{ token: string, user: User }> => {
     await delay(500);
+    
+    // Test credentials that bypass password checker
+    if (email === 'subsynapse_test@thapar.edu' && password === 'X9#mK2$pL@8vQ!nR5wE*') {
+        const testUser: User = {
+            id: 'test-user-001',
+            name: 'Test User',
+            email: 'subsynapse_test@thapar.edu',
+            creditBalance: 1000,
+            avatarUrl: 'https://api.dicebear.com/8.x/adventurer/svg?seed=TestUser',
+            memberSince: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        };
+        const token = createToken(testUser.id);
+        setAuthToken(token);
+        return { token, user: testUser };
+    }
+
     const user = users.find(u => u.email === email);
     // In a real app, you would compare a hashed password
     if (user && password === 'password123') {

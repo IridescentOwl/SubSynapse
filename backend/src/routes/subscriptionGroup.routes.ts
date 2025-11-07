@@ -59,9 +59,21 @@ router.post(
   upload.single('proofDocument'),
   optimizeAndStore,
   validateSubscriptionGroup,
-  (req, res, next) => {
-    clearCache('/groups');
-    SubscriptionGroupController.createGroup(req, res);
+  async (req: any, res: any, next: any) => {
+    try {
+      clearCache('/groups');
+      const result = await SubscriptionGroupController.createGroup(req, res);
+      return result;
+    } catch (error: any) {
+      // If response already sent, don't try to send again
+      if (!res.headersSent) {
+        return res.status(500).json({ 
+          message: 'Internal server error',
+          error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+      }
+      next(error);
+    }
   }
 );
 
@@ -125,7 +137,7 @@ router.get('/:id', SubscriptionGroupController.getGroup);
  *       '404':
  *         description: Group not found
  */
-router.post('/join/:id', authenticate, (req, res, next) => {
+router.post('/join/:id', authenticate, (req: any, res: any, next: any) => {
   clearCache('/groups');
   SubscriptionGroupController.joinGroup(req, res);
 });
@@ -165,7 +177,7 @@ router.post('/join/:id', authenticate, (req, res, next) => {
  *       '404':
  *         description: Group not found
  */
-router.put('/:id', authenticate, validateSubscriptionGroup, (req, res, next) => {
+router.put('/:id', authenticate, validateSubscriptionGroup, (req: any, res: any, next: any) => {
   clearCache('/groups');
   SubscriptionGroupController.updateGroup(req, res);
 });
@@ -190,7 +202,7 @@ router.put('/:id', authenticate, validateSubscriptionGroup, (req, res, next) => 
  *       '404':
  *         description: Membership not found
  */
-router.delete('/:id/leave', authenticate, (req, res, next) => {
+router.delete('/:id/leave', authenticate, (req: any, res: any, next: any) => {
   clearCache('/groups');
   SubscriptionGroupController.leaveGroup(req, res);
 });

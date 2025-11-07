@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import Razorpay from 'razorpay';
 import razorpay from '../utils/razorpay.util';
-import prisma from '../utils/prisma.util';
+import prisma from '../utils/prisma.singleton';
 import PaymentsService from '../services/payments.service';
 import { AuditService } from '../services/audit.service';
 import { EmailService } from '../services/email.service';
+import { validateEnvironment } from '../config/env.validation';
 
 class PaymentsController {
 
@@ -63,7 +64,8 @@ class PaymentsController {
   }
 
   static async handleWebhook(req: Request, res: Response) {
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET || '';
+    const env = validateEnvironment();
+    const secret = env.RAZORPAY_WEBHOOK_SECRET || '';
     const signature = req.headers['x-razorpay-signature'];
 
     if (!signature) {
@@ -82,7 +84,10 @@ class PaymentsController {
         if (event === 'payment.captured') {
           const { order_id, amount, id } = payload.payment.entity;
           const order = await razorpay.orders.fetch(order_id);
-          const userId = order.notes.user_id;
+          const userId = order.notes?.user_id;
+          if (!userId || typeof userId !== 'string') {
+            return res.status(400).json({ message: 'User ID not found in order notes' });
+          }
           await PaymentsService.addCredits(userId, amount / 100, id);
 
           const user = await prisma.user.findUnique({ where: { id: userId } });

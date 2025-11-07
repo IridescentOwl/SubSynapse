@@ -6,5 +6,7 @@
     "outDir": "./dist",
     "esModuleInterop": true,
     "strict": true
-  }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "prisma/**/*", "prisma.config.ts", "jest.config.js", "load-testing/**/*", "**/*.test.ts"]
 }

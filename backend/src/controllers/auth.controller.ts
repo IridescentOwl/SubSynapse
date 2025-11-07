@@ -1,24 +1,23 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { AuthService } from '../services/auth.service';
 import { EmailService } from '../services/email.service';
 import { EncryptionService } from '../services/encryption.service';
 import { AuditService } from '../services/audit.service';
 import { generateOtp, generateSecureToken } from '../utils/crypto.util';
 import { log } from '../utils/logging.util';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma.singleton';
 
 export class AuthController {
   public static async register(req: Request, res: Response): Promise<Response> {
     const { email, password, name, website } = req.body;
 
+    // Bot detection (honeypot field)
     if (website) {
         return res.status(400).json({ message: 'Bot detected' });
     }
 
-    // Thapar-exclusive email validation
-    if (!email.endsWith('@thapar.edu')) {
+    // Additional validation (though express-validator should have caught this)
+    if (!email || !email.endsWith('@thapar.edu')) {
       return res.status(400).json({ message: 'Only @thapar.edu emails are allowed' });
     }
 
@@ -50,13 +49,35 @@ export class AuthController {
         },
       });
 
-      await EmailService.sendWelcomeEmail(email, name);
+      // Send emails (non-blocking - don't fail registration if email fails)
+      try {
+        await EmailService.sendWelcomeEmail(email, name);
+      } catch (error) {
+        log('warn', 'Failed to send welcome email, but registration continues', { error });
+      }
 
-      await EmailService.sendVerificationEmail(email, verificationToken);
+      try {
+        await EmailService.sendVerificationEmail(email, verificationToken);
+      } catch (error) {
+        log('warn', 'Failed to send verification email, but registration continues', { error });
+        // In development, log the verification token
+        if (process.env.NODE_ENV === 'development') {
+          log('info', `Verification token for ${email}: ${verificationToken}`, {});
+          console.log(`\n📧 Verification token for ${email}: ${verificationToken}\n`);
+        }
+      }
 
       await AuditService.log('USER_REGISTER', user.id, JSON.stringify(user), req.ip, 'User');
 
-      return res.status(201).json({ message: 'User registered. Please check your email for verification OTP.' });
+      // Return success with token in development mode if email failed
+      const responseMessage = process.env.NODE_ENV === 'development' 
+        ? `User registered. Verification token: ${verificationToken} (Check console for details)`
+        : 'User registered. Please check your email for verification OTP.';
+
+      return res.status(201).json({ 
+        message: responseMessage,
+        ...(process.env.NODE_ENV === 'development' && { verificationToken })
+      });
     } catch (error) {
       log('error', 'An error occurred during registration', { error });
       return res.status(500).json({ message: 'Internal server error' });

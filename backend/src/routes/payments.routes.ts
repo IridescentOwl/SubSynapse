@@ -1,27 +1,105 @@
-import express from 'express';
+import { Router } from 'express';
 import PaymentsController from '../controllers/payments.controller';
 import { authenticate } from '../middleware/auth.middleware';
-import { isAdmin } from '../middleware/role.middleware';
-import { validateAddCredits, validateRequestWithdrawal } from '../middleware/validation.middleware';
 
-const router = express.Router();
+const router = Router();
 
-// Add credits to account
-router.post('/add-credits', authenticate, validateAddCredits, PaymentsController.addCredits);
+/**
+ * @swagger
+ * tags:
+ *   name: Payments
+ *   description: Payment and credit management
+ */
 
-// Request withdrawal
-router.post('/withdraw-request', authenticate, validateRequestWithdrawal, PaymentsController.requestWithdrawal);
+/**
+ * @swagger
+ * /payments/add-credits:
+ *   post:
+ *     summary: Create a payment order to add credits
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - amount
+ *               - currency
+ *             properties:
+ *               amount:
+ *                 type: number
+ *               currency:
+ *                 type: string
+ *                 default: INR
+ *     responses:
+ *       '200':
+ *         description: Order created successfully
+ *       '401':
+ *         description: Unauthorized
+ */
+router.post('/add-credits', authenticate, PaymentsController.addCredits);
 
-// Get withdrawal history
+/**
+ * @swagger
+ * /payments/withdrawal:
+ *   post:
+ *     summary: Request a withdrawal
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - amount
+ *               - upiId
+ *             properties:
+ *               amount:
+ *                 type: number
+ *               upiId:
+ *                 type: string
+ *     responses:
+ *       '200':
+ *         description: Withdrawal request created successfully
+ *       '401':
+ *         description: Unauthorized
+ */
+router.post('/withdrawal', authenticate, PaymentsController.requestWithdrawal);
+
+/**
+ * @swagger
+ * /payments/withdrawal-history:
+ *   get:
+ *     summary: Get withdrawal history
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Withdrawal history retrieved successfully
+ *       '401':
+ *         description: Unauthorized
+ */
 router.get('/withdrawal-history', authenticate, PaymentsController.getWithdrawalHistory);
 
-// Admin withdrawal approval
-router.put('/withdraw/:id/approve', authenticate, isAdmin, PaymentsController.approveWithdrawal);
-
-// Razorpay webhook handler
+/**
+ * @swagger
+ * /payments/webhook:
+ *   post:
+ *     summary: Razorpay webhook endpoint
+ *     tags: [Payments]
+ *     responses:
+ *       '200':
+ *         description: Webhook processed successfully
+ */
 router.post('/webhook', PaymentsController.handleWebhook);
 
-// Refund for a failed group
-router.post('/refund/:groupId', authenticate, isAdmin, PaymentsController.refund);
-
 export default router;
+
+

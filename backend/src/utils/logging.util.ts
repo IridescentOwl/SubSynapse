@@ -35,7 +35,8 @@ const maskData = (data: any): any => {
  * @param message The message to log.
  * @param data Additional data to log.
  */
-export const log = (level: 'info' | 'error', message: string, data?: any): void => {
+export const log = (level: 'info' | 'error' | 'warn', message: string, data?: any): void => {
   const maskedData = data ? maskData(data) : '';
-  console[level](`${new Date().toISOString()} [${level.toUpperCase()}] ${message}`, maskedData);
+  const consoleMethod = level === 'warn' ? 'warn' : level;
+  console[consoleMethod](`${new Date().toISOString()} [${level.toUpperCase()}] ${message}`, maskedData);
 };

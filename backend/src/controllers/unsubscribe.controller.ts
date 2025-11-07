@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
-import prisma from '../utils/prisma.util';
+import prisma from '../utils/prisma.singleton';
 import jwt from 'jsonwebtoken';
+import { validateEnvironment } from '../config/env.validation';
 
 export class UnsubscribeController {
   public static async unsubscribe(req: Request, res: Response): Promise<Response> {
@@ -11,7 +12,8 @@ export class UnsubscribeController {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { email: string };
+      const env = validateEnvironment();
+      const decoded = jwt.verify(token, env.JWT_SECRET) as { email: string };
       const email = decoded.email;
 
       const user = await prisma.user.findUnique({ where: { email } });

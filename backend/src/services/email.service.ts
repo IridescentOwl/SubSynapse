@@ -1,12 +1,27 @@
 import sgMail from '@sendgrid/mail';
 import { config } from 'dotenv';
 import { renderTemplate } from '../utils/template.util';
-import prisma from '../utils/prisma.util';
+import prisma from '../utils/prisma.singleton';
 import jwt from 'jsonwebtoken';
+import { validateEnvironment } from '../config/env.validation';
 
 config();
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY as string);
+const env = validateEnvironment();
+
+// Only set SendGrid API key if it's valid
+if (env.SENDGRID_API_KEY && 
+    env.SENDGRID_API_KEY !== 'SG.placeholder_key' && 
+    !env.SENDGRID_API_KEY.includes('placeholder')) {
+  try {
+    sgMail.setApiKey(env.SENDGRID_API_KEY);
+    console.log('✅ SendGrid API key configured');
+  } catch (error) {
+    console.warn('⚠️  Failed to set SendGrid API key:', error);
+  }
+} else {
+  console.warn('⚠️  SendGrid API key not configured or is placeholder. Email sending will be disabled.');
+}
 
 export class EmailService {
   private static async sendEmail(to: string, subject: string, body: string, essential = false): Promise<void> {
@@ -17,31 +32,59 @@ export class EmailService {
       return;
     }
 
-    const token = jwt.sign({ email: to }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
-    const unsubscribeLink = `${process.env.FRONTEND_URL}/unsubscribe?token=${token}`;
+    const env = validateEnvironment();
+    
+    // Check if SendGrid is properly configured
+    if (!env.SENDGRID_API_KEY || env.SENDGRID_API_KEY === 'SG.placeholder_key' || env.SENDGRID_API_KEY.includes('placeholder')) {
+      console.warn(`⚠️  SendGrid API key not configured. Email not sent to ${to}`);
+      console.warn(`   Subject: ${subject}`);
+      if (env.NODE_ENV === 'development') {
+        console.warn(`   Email body would be: ${body}`);
+      }
+      return; // Don't throw error, just skip email
+    }
+
+    const token = jwt.sign({ email: to }, env.JWT_SECRET, { expiresIn: '7d' });
+    const unsubscribeLink = `${env.FRONTEND_URL}/unsubscribe?token=${token}`;
     const html = renderTemplate('base', { body, unsubscribeLink });
 
     const msg = {
       to,
-      from: process.env.EMAIL_FROM as string,
+      from: env.EMAIL_FROM,
       subject,
       html,
     };
 
     try {
       await sgMail.send(msg);
-      console.log(`Email sent to ${to}`);
-    } catch (error) {
-      console.error('Error sending email:', error);
-      if (error.response) {
-        console.error(error.response.body);
+      console.log(`✅ Email sent to ${to}`);
+    } catch (error: any) {
+      console.error('❌ Error sending email:', error.message || error);
+      if (error?.response?.body) {
+        console.error('SendGrid error details:', error.response.body);
       }
-      throw new Error('Email could not be sent.');
+      
+      // In development, log the email content instead of failing
+      if (env.NODE_ENV === 'development') {
+        console.warn(`⚠️  Email sending failed, but continuing. Email would have been:`);
+        console.warn(`   To: ${to}`);
+        console.warn(`   Subject: ${subject}`);
+        console.warn(`   Body: ${body}`);
+      }
+      
+      // Only throw error if email is essential AND we're in production
+      if (essential && env.NODE_ENV === 'production') {
+        throw new Error('Email could not be sent.');
+      }
+      
+      // Otherwise, just log and continue
+      console.warn(`⚠️  Email to ${to} failed, but operation continues`);
     }
   }
 
   public static async sendVerificationEmail(email: string, token: string): Promise<void> {
-    const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+    const env = validateEnvironment();
+    const verificationLink = `${env.FRONTEND_URL}/verify-email?token=${token}`;
     const subject = 'Verify your Subsynapse account';
     const body = `<p>Click <a href="${verificationLink}">here</a> to verify your account.</p>`;
 
@@ -49,7 +92,8 @@ export class EmailService {
   }
 
   public static async sendPasswordResetEmail(email: string, token: string): Promise<void> {
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    const env = validateEnvironment();
+    const resetLink = `${env.FRONTEND_URL}/reset-password?token=${token}`;
     const subject = 'Reset your Subsynapse password';
     const body = `<p>Click <a href="${resetLink}">here</a> to reset your password.</p>`;
 

@@ -6,7 +6,9 @@ import { AuditService } from '../services/audit.service';
 export class UserController {
   public static getProfile(req: Request, res: Response) {
     const { password, ...userProfile } = req.user!;
-    userProfile.name = EncryptionService.decrypt(userProfile.name);
+    if (userProfile.name) {
+      userProfile.name = EncryptionService.decrypt(userProfile.name);
+    }
     res.json(userProfile);
   }
 

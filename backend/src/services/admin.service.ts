@@ -1,5 +1,8 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { validateEnvironment } from '../config/env.validation';
+
+const env = validateEnvironment();
 
 // Mock admin user for testing without a database
 const mockAdmin = {
@@ -12,9 +15,11 @@ export class AdminService {
   static async login(email: string, password: string): Promise<{ token: string } | null> {
     // TODO: Replace with actual database query
     if (email === mockAdmin.email && bcrypt.compareSync(password, mockAdmin.password)) {
-      const token = jwt.sign({ id: mockAdmin.id, email: mockAdmin.email }, process.env.JWT_SECRET || 'your-secret-key', {
-        expiresIn: '1h',
-      });
+      const token = jwt.sign(
+        { id: mockAdmin.id, email: mockAdmin.email }, 
+        env.JWT_SECRET, 
+        { expiresIn: '1h' }
+      );
       return { token };
     }
     return null;

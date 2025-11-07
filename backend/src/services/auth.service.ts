@@ -1,10 +1,11 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { User, PrismaClient } from '@prisma/client';
+// import { User } from '@prisma/client'; // Type removed due to import issues
+import prisma from '../utils/prisma.singleton';
 
-const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'your-jwt-secret';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-jwt-refresh-secret';
+// Remove fallback values - these should be validated at startup
+const JWT_SECRET = process.env.JWT_SECRET!;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
 
 export class AuthService {
   private static readonly SALT_ROUNDS = 12;
@@ -18,7 +19,7 @@ export class AuthService {
   }
 
   public static async generateTokens(
-    user: User,
+    user: any,
     ipAddress?: string,
     userAgent?: string
   ): Promise<{ accessToken: string; refreshToken: string }> {

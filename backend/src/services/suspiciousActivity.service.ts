@@ -1,4 +1,4 @@
-import prisma from '../utils/prisma.util';
+import prisma from '../utils/prisma.singleton';
 import { log } from '../utils/logging.util';
 import { EmailService } from './email.service';
 

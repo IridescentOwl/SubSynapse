@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { AuthService } from '../services/auth.service';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma.singleton';
 
 export const apiKeyMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     const apiKey = req.headers['x-api-key'];

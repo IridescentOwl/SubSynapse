@@ -9,7 +9,9 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: 'http://localhost:4000/api',
+      url: process.env.NODE_ENV === 'production' 
+        ? `${process.env.FRONTEND_URL}/api` 
+        : 'http://localhost:4000/api',
       description: 'Development server',
     },
   ],

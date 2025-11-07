@@ -41,7 +41,7 @@ model User {
   auditLogs                 AuditLog[]
   emailVerifications        EmailVerification[]
   passwordResetTokens       PasswordResetToken[]
-  activeSessions            UserSession[]
+  activeSessions            ActiveSession[]
   sessions                  Session[]
   credentialAccessLogs      CredentialAccessLog[]
 }
@@ -176,7 +176,7 @@ model PasswordResetToken {
   user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model UserSession {
+model ActiveSession {
   id                        String    @id @default(auto()) @map("_id") @db.ObjectId
   userId                    String    @db.ObjectId
   sessionToken              String    @unique

@@ -2,53 +2,71 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
-import * as Sentry from '@sentry/node';
-import authRoutes from './routes/auth.routes';
+// import * as Sentry from '@sentry/node'; // Removed due to version incompatibility
+import { AuthenticatedRequest } from './types/express';
+import { validateEnvironment } from './config/env.validation';
+import { log } from './utils/logging.util';
 import { defaultRateLimiter } from './middleware/rateLimiter.middleware';
 import { startSuspiciousActivityCheck } from './cron';
 import { startDailyChecks } from './cron/dailyChecks';
-import { AuthenticatedRequest } from './types/express';
+
+// Route imports
+import authRoutes from './routes/auth.routes';
+import userRoutes from './routes/user.routes';
+import subscriptionGroupRoutes from './routes/subscriptionGroup.routes';
+import paymentsRoutes from './routes/payments.routes';
+import credentialRoutes from './routes/credential.routes';
+import reviewRoutes from './routes/review.routes';
+import adminRoutes from './routes/admin.routes';
+import healthRoutes from './routes/health.routes';
+import unsubscribeRoutes from './routes/unsubscribe.routes';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './utils/swagger.util';
 
 dotenv.config();
 
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-  integrations: [
-    // enable HTTP calls tracing
-    new Sentry.Integrations.Http({ tracing: true }),
-    // enable Express.js middleware tracing
-    new Sentry.Integrations.Express({ app: express() }),
-  ],
-  // Performance Monitoring
-  tracesSampleRate: 1.0, //  Capture 100% of the transactions
-  // Set sampling rate for profiling - this is relative to tracesSampleRate
-  profilesSampleRate: 1.0,
-});
+// Validate environment variables before starting
+const envConfig = validateEnvironment();
 
-const prisma = new PrismaClient();
+// Sentry initialization removed due to version incompatibility
 
 const app = express();
-const port = process.env.PORT || 4000;
+const port = envConfig.PORT;
 
-app.use(cors({
-  origin: 'http://localhost:3000', // Allow the frontend origin
-  credentials: true, // Allow cookies and authorization headers
-}));
+// Sentry middleware removed
 
+// CORS configuration based on environment
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [envConfig.FRONTEND_URL];
+    
+    // Only add localhost in development
+    if (envConfig.NODE_ENV === 'development') {
+      allowedOrigins.push('http://localhost:3000', 'http://localhost:3001');
+    }
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      log('warn', `CORS blocked origin: ${origin}`, { allowedOrigins });
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 app.use(helmet());
-
 app.use(defaultRateLimiter);
-
-import { log } from './utils/logging.util';
 
 app.use(express.json());
 
 // Logging middleware
 app.use((req: AuthenticatedRequest, res, next) => {
-  if (req.user) {
-    Sentry.setUser({ id: req.user.id, email: req.user.email });
-  }
   log('info', `Incoming request: ${req.method} ${req.url}`, { body: req.body });
   next();
 });
@@ -57,62 +75,30 @@ app.get('/', (req, res) => {
   res.send('Server is running!');
 });
 
-// Use the auth routes
+// API Routes
 app.use('/api/auth', authRoutes);
-
-// Use the user routes
-import userRoutes from './routes/user.routes';
 app.use('/api/users', userRoutes);
-
-// Use the subscription group routes
-import subscriptionGroupRoutes from './routes/subscriptionGroup.routes';
 app.use('/api/subscription-groups', subscriptionGroupRoutes);
-
-// Use the payments routes
-import paymentsRoutes from './routes/payments.routes';
 app.use('/api/payments', paymentsRoutes);
-
-// Use the credentials routes
-import credentialRoutes from './routes/credential.routes';
 app.use('/api/credentials', credentialRoutes);
-
-// Use the review routes
-import reviewRoutes from './routes/review.routes';
 app.use('/api/reviews', reviewRoutes);
-
-// Use the admin routes
-import adminRoutes from './routes/admin.routes';
 app.use('/api/admin', adminRoutes);
-
-// Use the health check routes
-import healthRoutes from './routes/health.routes';
 app.use('/api', healthRoutes);
-
-// Use the unsubscribe routes
-import unsubscribeRoutes from './routes/unsubscribe.routes';
 app.use('/api/unsubscribe', unsubscribeRoutes);
 
 // Swagger API documentation
-import swaggerUi from 'swagger-ui-express';
-import swaggerSpec from './utils/swagger.util';
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// The Sentry request handler must be the first middleware on the app
-app.use(Sentry.Handlers.requestHandler());
+// Sentry error handler removed
 
-// TracingHandler creates a trace for every incoming request
-app.use(Sentry.Handlers.tracingHandler());
+// Import error handling middleware
+import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 
-// The Sentry error handler must be registered before any other error middleware and after all controllers
-app.use(Sentry.Handlers.errorHandler());
+// Handle 404 routes
+app.use(notFoundHandler);
 
-// Optional fallthrough error handler
-app.use(function onError(err, req, res, next) {
-  // The error id is attached to `res.sentry` to be returned
-  // and optionally displayed to the user for support.
-  res.statusCode = 500;
-  res.end(res.sentry + "\n");
-});
+// Global error handling middleware (must be last)
+app.use(errorHandler);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

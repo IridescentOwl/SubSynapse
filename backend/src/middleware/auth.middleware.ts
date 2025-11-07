@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service';
-import { PrismaClient, User } from '@prisma/client';
-
-const prisma = new PrismaClient();
+// Remove unused import
+import prisma from '../utils/prisma.singleton';
 
 import { AuthenticatedRequest } from '../types/express';
 

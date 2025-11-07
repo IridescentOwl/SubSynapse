@@ -1,6 +1,6 @@
 import multer from 'multer';
 import path from 'path';
-import { Request } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import sharp from 'sharp';
 import fs from 'fs';
 
@@ -35,22 +35,70 @@ import fs from 'fs';
 
 const storage = multer.memoryStorage(); // Use memory storage to process the file with sharp
 
-const upload = multer({ storage });
+export const upload = multer({ storage });
 
-export const optimizeAndStore = (req: Request, res, next) => {
+export const optimizeAndStore = (req: Request, res: Response, next: NextFunction) => {
   if (!req.file) {
     return next();
   }
 
+  // Check if file is an image (for optimization)
+  const imageMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+  const isImage = imageMimeTypes.includes(req.file.mimetype);
+
+  if (!isImage) {
+    // For non-image files (like text files with URLs), just store as-is
+    const outputFilePath = path.join('uploads', `${Date.now()}-${req.file.originalname}`);
+    const uploadsDir = path.dirname(outputFilePath);
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    
+    fs.writeFileSync(outputFilePath, req.file.buffer);
+    req.file.path = outputFilePath;
+    return next();
+  }
+
+  // For images, optimize with Sharp
   const outputFilePath = path.join('uploads', `${Date.now()}-optimized.webp`);
+
+  // Ensure uploads directory exists
+  const uploadsDir = path.dirname(outputFilePath);
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
 
   sharp(req.file.buffer)
     .resize(800, 800, { fit: 'inside' }) // Resize to a max of 800x800
     .toFormat('webp', { quality: 80 })  // Convert to WebP with 80% quality
     .toFile(outputFilePath)
     .then(() => {
-      req.file.path = outputFilePath; // Update the file path to the optimized version
+      if (req.file) {
+        req.file.path = outputFilePath; // Update the file path to the optimized version
+      }
       next();
+    })
+    .catch((err) => {
+      console.error('Error processing image with Sharp:', err);
+      // If Sharp fails, try to save the original file
+      if (!req.file) {
+        return next(err);
+      }
+      
+      try {
+        const fallbackPath = path.join('uploads', `${Date.now()}-${req.file.originalname}`);
+        const uploadsDir = path.dirname(fallbackPath);
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        fs.writeFileSync(fallbackPath, req.file.buffer);
+        req.file.path = fallbackPath;
+        next();
+      } catch (fallbackErr) {
+        console.error('Error saving fallback file:', fallbackErr);
+        next(err); // Pass the original error
+      }
+    });
 
       // --- CDN Integration (Conceptual) ---
       // Here, you would call your uploadToS3 function:
@@ -65,9 +113,4 @@ export const optimizeAndStore = (req: Request, res, next) => {
       //   })
       //   .catch(err => next(err));
       // ------------------------------------
-    })
-    .catch(err => {
-      console.error('Error processing image:', err);
-      next(err);
-    });
 };

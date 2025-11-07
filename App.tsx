@@ -130,9 +130,16 @@ function App() {
   };
   
   const handleCreateGroup = async (groupData: Omit<SubscriptionGroup, 'id' | 'postedBy' | 'slotsFilled'>) => {
-      await createGroup(groupData);
-      setCreateGroupModalOpen(false);
-      handleNavigate('dashboard', 'dashboard');
+      try {
+          await createGroup(groupData);
+          setCreateGroupModalOpen(false);
+          // Refresh user data and navigate to explore tab to see the new group
+          await syncUserData();
+          handleNavigate('dashboard', 'explore');
+      } catch (error) {
+          // Error is handled in CreateGroupModal
+          throw error;
+      }
   };
 
   const handleOpenCreateGroupModal = () => {

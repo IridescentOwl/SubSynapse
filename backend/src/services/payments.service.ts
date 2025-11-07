@@ -1,5 +1,5 @@
 import razorpay from '../utils/razorpay.util';
-import prisma from '../utils/prisma.util';
+import prisma from '../utils/prisma.singleton';
 import { EncryptionService } from './encryption.service';
 
 class PaymentsService {
@@ -97,7 +97,7 @@ class PaymentsService {
       where: { userId },
     });
 
-    return withdrawalRequests.map((request) => ({
+    return withdrawalRequests.map((request: any) => ({
       ...request,
       upiId: EncryptionService.decrypt(request.upiId),
     }));

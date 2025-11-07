@@ -1,4 +1,4 @@
-import prisma from '../utils/prisma.util';
+import prisma from '../utils/prisma.singleton';
 import { EncryptionService } from './encryption.service';
 
 const updatableUserFields = ['name'];
@@ -7,10 +7,10 @@ export class UserService {
   public static async updateProfile(userId: string, data: any) {
     const filteredData = Object.keys(data)
       .filter(key => updatableUserFields.includes(key))
-      .reduce((obj, key) => {
+      .reduce((obj: any, key) => {
         obj[key] = data[key];
         return obj;
-      }, {});
+      }, {} as any);
 
     if (filteredData.name) {
         filteredData.name = EncryptionService.encrypt(filteredData.name);
@@ -46,14 +46,34 @@ export class UserService {
   }
 
   public static async getMySubscriptions(userId: string) {
-    return prisma.groupMembership.findMany({
+    const memberships = await prisma.groupMembership.findMany({
       where: {
         userId,
         isActive: true,
       },
       include: {
-        group: true,
+        group: {
+          include: {
+            owner: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
+    
+    // Decrypt owner names
+    return memberships.map(membership => ({
+      ...membership,
+      group: {
+        ...membership.group,
+        owner: {
+          ...membership.group.owner,
+          name: membership.group.owner.name ? EncryptionService.decrypt(membership.group.owner.name) : 'Unknown',
+        },
+      },
+    }));
   }
 }

@@ -1,4 +1,4 @@
-import prisma from '../utils/prisma.util';
+import prisma from '../utils/prisma.singleton';
 import { EmailService } from './email.service';
 
 export class AlertsService {
@@ -25,7 +25,9 @@ export class AlertsService {
     });
 
     for (const membership of expiringMemberships) {
-      await EmailService.sendSubscriptionExpiryWarning(membership.user.email, membership.group.name, membership.endDate);
+      if (membership.endDate) {
+        await EmailService.sendSubscriptionExpiryWarning(membership.user.email, membership.group.name, membership.endDate);
+      }
     }
   }
 

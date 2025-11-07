@@ -1,10 +1,8 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { EncryptionService } from '../services/encryption.service';
 import { AuditService } from '../services/audit.service';
 import { AuthenticatedRequest } from '../types/express';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma.singleton';
 
 export class CredentialController {
   static async storeCredentials(req: AuthenticatedRequest, res: Response) {

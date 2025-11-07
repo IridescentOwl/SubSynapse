@@ -1,9 +1,7 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { AuthenticatedRequest } from '../types/express';
 import { log } from '../utils/logging.util';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma.singleton';
 
 const SPAM_KEYWORDS = ['spam', 'test', 'review'];
 

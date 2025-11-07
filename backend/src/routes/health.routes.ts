@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import prisma from '../utils/prisma.util';
+import prisma from '../utils/prisma.singleton';
 
 const router = Router();
 

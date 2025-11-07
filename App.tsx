@@ -4,6 +4,11 @@ import Header from './components/Header.tsx';
 import HomePage from './HomePage.tsx';
 import DashboardPage from './DashboardPage.tsx';
 import ProfilePage from './ProfilePage.tsx';
+import ContactUsPage from './ContactUsPage.tsx';
+import TermsAndConditionsPage from './TermsAndConditionsPage.tsx';
+import PrivacyPolicyPage from './PrivacyPolicyPage.tsx';
+import CancellationAndRefundsPage from './CancellationAndRefundsPage.tsx';
+import Footer from './components/Footer.tsx';
 import ManageSubscriptionModal from './components/ManageSubscriptionModal.tsx';
 import CreateGroupModal from './components/CreateGroupModal.tsx';
 import JoinGroupModal from './components/JoinGroupModal.tsx';
@@ -15,7 +20,7 @@ import { useAuth } from './AuthContext.tsx';
 import * as api from './services/api.ts';
 
 
-export type Page = 'home' | 'dashboard' | 'profile';
+export type Page = 'home' | 'dashboard' | 'profile' | 'contact' | 'terms' | 'privacy' | 'cancellation-refunds';
 export type DashboardTab = 'explore' | 'dashboard';
 export type AppState = 'loading' | 'panning' | 'finished';
 
@@ -151,8 +156,7 @@ function App() {
   };
   
   const renderPage = () => {
-    const currentPage = isAuthenticated ? page : 'home';
-    switch (currentPage) {
+    switch (page) {
       case 'dashboard':
         return <DashboardPage 
             activeTab={activeDashboardTab}
@@ -169,6 +173,14 @@ function App() {
                         onChangePassword={changePassword}
                         onUpdateProfilePicture={updateProfilePicture}
                       /> : null;
+      case 'contact':
+        return <ContactUsPage />;
+      case 'terms':
+        return <TermsAndConditionsPage />;
+      case 'privacy':
+        return <PrivacyPolicyPage />;
+      case 'cancellation-refunds':
+        return <CancellationAndRefundsPage />;
       case 'home':
       default:
         return <HomePage onLogin={() => setAuthModalOpen(true)} isReady={isReady} />;
@@ -188,7 +200,10 @@ function App() {
           onCreateGroup={handleOpenCreateGroupModal}
           onAddCredits={() => setAddCreditsModalOpen(true)}
         />
-        {renderPage()}
+        <main className="flex-grow">
+          {renderPage()}
+        </main>
+        <Footer onNavigate={handleNavigate} />
       {selectedSubscription && (
         <ManageSubscriptionModal 
           isOpen={isManageModalOpen}

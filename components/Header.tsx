@@ -28,6 +28,7 @@ const Header: React.FC<HeaderProps> = ({ isVisible, page, user, activeDashboardT
   const isMarketplaceActive = page === 'dashboard' && activeDashboardTab === 'explore';
   const isDashboardActive = page === 'dashboard' && activeDashboardTab === 'dashboard';
   const isProfileActive = page === 'profile';
+  const isContactUsActive = page === 'contact';
   
   return (
     <header className={`sticky top-6 z-50 transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
@@ -52,6 +53,7 @@ const Header: React.FC<HeaderProps> = ({ isVisible, page, user, activeDashboardT
             <NavLink onClick={() => onNavigate('dashboard', 'explore')} isActive={isMarketplaceActive}>Marketplace</NavLink>
             <NavLink onClick={() => onNavigate('dashboard', 'dashboard')} isActive={isDashboardActive}>Dashboard</NavLink>
             <NavLink onClick={() => onNavigate('profile')} isActive={isProfileActive}>Profile</NavLink>
+            <NavLink onClick={() => onNavigate('contact')} isActive={isContactUsActive}>Contact Us</NavLink>
           </div>
 
           <div className="hidden md:flex items-center space-x-4 pr-8">

@@ -64,13 +64,12 @@ function App() {
   useEffect(() => {
     if (isAuthenticated) {
       setAuthModalOpen(false);
-      if (page === 'home') {
-        setPage('dashboard');
-      }
+      // Always redirect to dashboard when user becomes authenticated
+      setPage('dashboard');
     } else {
       setPage('home');
     }
-  }, [isAuthenticated, page]);
+  }, [isAuthenticated]);
 
   const handleLogout = () => {
     logout();

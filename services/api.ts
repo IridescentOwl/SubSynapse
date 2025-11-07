@@ -87,6 +87,18 @@ export const fetchAuthenticatedUser = async (): Promise<User | null> => {
     const userId = getUserIdFromToken(token);
     if (!userId) return null;
 
+    // Handle test user specially since it's not in the users array
+    if (userId === 'test-user-001') {
+        return {
+            id: 'test-user-001',
+            name: 'Test User',
+            email: 'subsynapse_test@thapar.edu',
+            creditBalance: 1000,
+            avatarUrl: 'https://api.dicebear.com/8.x/adventurer/svg?seed=TestUser',
+            memberSince: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        };
+    }
+
     return users.find(u => u.id === userId) || null;
 };
 

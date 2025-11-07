@@ -50,12 +50,14 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
       proof: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const { name, value } = e.target;
       setFormState(prev => ({ ...prev, [name]: value }));
+      setError(null); // Clear error on input change
   };
 
   const handleSelectChange = (name: 'icon' | 'category', value: string) => {
@@ -64,29 +66,37 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
       } else {
           setFormState(prev => ({ ...prev, icon: value as IconName }));
       }
+      setError(null);
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       setIsSubmitting(true);
-      const groupData = {
-          ...formState,
-          totalPrice: parseInt(formState.totalPrice),
-          slotsTotal: parseInt(formState.slotsTotal),
-          tags: formState.tags.split(',').map(tag => tag.trim()),
-          credentials: {
-              username: formState.username,
-              password: formState.password,
-          }
-      };
-      await onCreateGroup(groupData);
-      setIsSubmitting(false);
+      setError(null);
+      
+      try {
+          const groupData = {
+              ...formState,
+              totalPrice: parseInt(formState.totalPrice),
+              slotsTotal: parseInt(formState.slotsTotal),
+              tags: formState.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
+              credentials: {
+                  username: formState.username,
+                  password: formState.password,
+              }
+          };
+          await onCreateGroup(groupData);
+          // Modal will be closed by parent component on success
+      } catch (err: any) {
+          setError(err.message || 'Failed to create group. Please try again.');
+          setIsSubmitting(false);
+      }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <GlassmorphicCard 
-        className="w-full max-w-lg m-4 p-8 relative" 
+        className="w-full max-w-lg m-4 p-8 relative max-h-[80vh] overflow-y-auto" 
         onClick={(e) => e.stopPropagation()}
         hasAnimation
         isReady={isOpen}
@@ -129,18 +139,20 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
              />
             <FormInput label="Tags (comma separated)" name="tags" type="text" placeholder="4K, UHD, Movies" value={formState.tags} onChange={handleInputChange} />
 
+            {error && <p className="text-sm text-red-400 text-center mt-2">{error}</p>}
+            
             <div className="pt-4 flex justify-end gap-4">
                  <button 
                     type="button"
                     onClick={onClose}
-                    className="font-semibold py-2 px-6 rounded-xl transition duration-300 bg-white/10 hover:bg-white/20 text-white"
+                    className="font-semibold py-2 px-6 rounded-xl transition duration-300 bg-white/10 hover:bg-white/20 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={isSubmitting}
                 >
                     Cancel
                 </button>
                 <button 
                     type="submit"
-                    className="font-bold py-2 px-6 rounded-xl transition duration-300 bg-sky-500 hover:bg-sky-400 text-white min-w-[150px]"
+                    className="font-bold py-2 px-6 rounded-xl transition duration-300 bg-sky-500 hover:bg-sky-400 text-white min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={isSubmitting}
                 >
                     {isSubmitting ? 'Submitting...' : 'Submit for Review'}

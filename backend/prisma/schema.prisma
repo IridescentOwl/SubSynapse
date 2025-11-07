@@ -1,0 +1,225 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name                      String
+  email                     String    @unique
+  phone                     String?
+  avatar                    String?
+  password                  String
+  creditBalance             Float     @default(0)
+  emailVerified             Boolean   @default(false)
+  isActive                  Boolean   @default(true)
+  createdAt                 DateTime  @default(now())
+  lastLogin                 DateTime?
+
+  failedLoginAttempts       Int       @default(0)
+  lockoutUntil              DateTime?
+
+  twoFactorSecret           String?
+  isTwoFactorEnabled        Boolean   @default(false)
+
+  notifications             Json?
+
+  updatedAt                 DateTime  @updatedAt
+
+  ownedGroups               SubscriptionGroup[]
+  memberships               GroupMembership[]
+  transactions              Transaction[]
+  withdrawalRequests        WithdrawalRequest[]
+  reviews                   Review[]
+  auditLogs                 AuditLog[]
+  emailVerifications        EmailVerification[]
+  passwordResetTokens       PasswordResetToken[]
+  activeSessions            ActiveSession[]
+  sessions                  Session[]
+  credentialAccessLogs      CredentialAccessLog[]
+}
+
+model SubscriptionGroup {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  ownerId                   String    @db.ObjectId
+  name                      String
+  serviceType               String
+  totalPrice                Float
+  slotsTotal                Int
+  slotsFilled               Int
+  isActive                  Boolean   @default(true)
+  proofDocument             String?
+  adminApproved             Boolean   @default(false)
+  createdAt                 DateTime  @default(now())
+
+  owner                     User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members                   GroupMembership[]
+  credentials               Credential?
+  reviews                   Review[]
+  sessions                  Session[]
+  credentialAccessLogs      CredentialAccessLog[]
+
+  @@index([ownerId])
+  @@index([serviceType, isActive, adminApproved])
+}
+
+model GroupMembership {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String    @db.ObjectId
+  groupId                   String    @db.ObjectId
+  joinDate                  DateTime  @default(now())
+  endDate                   DateTime?
+  shareAmount               Float
+  isActive                  Boolean   @default(true)
+
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group                     SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@index([userId, isActive])
+  @@index([groupId])
+}
+
+model Transaction {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String    @db.ObjectId
+  type                      String // e.g., "credit", "debit"
+  amount                    Float
+  status                    String // e.g., "pending", "completed", "failed"
+  paymentGatewayId          String?
+  createdAt                 DateTime  @default(now())
+
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([paymentGatewayId])
+  @@index([status])
+  @@index([type])
+}
+
+model WithdrawalRequest {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String    @db.ObjectId
+  amount                    Float
+  upiId                     String
+  status                    String // e.g., "pending", "approved", "rejected"
+  requestedAt               DateTime  @default(now())
+  processedAt               DateTime?
+  cooldownExpiresAt         DateTime?
+
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, requestedAt])
+  @@index([status])
+}
+
+model Credential {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  groupId                   String    @db.ObjectId @unique
+  credentials               String
+  createdAt                 DateTime  @default(now())
+
+  group                     SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String    @db.ObjectId
+  groupId                   String    @db.ObjectId
+  rating                    Int
+  comment                   String?
+  createdAt                 DateTime  @default(now())
+
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group                     SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String?   @db.ObjectId
+  adminId                   String?   @db.ObjectId
+  action                    String
+  tableName                 String?
+  oldValues                 String? // JSON string
+  newValues                 String? // JSON string
+  ipAddress                 String?
+  createdAt                 DateTime  @default(now())
+
+  user                      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  admin                     Admin?    @relation(fields: [adminId], references: [id], onDelete: SetNull)
+}
+
+model EmailVerification {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String    @db.ObjectId
+  token                     String    @unique
+  expiresAt                 DateTime
+  usedAt                    DateTime?
+
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String    @db.ObjectId
+  token                     String    @unique
+  expiresAt                 DateTime
+  usedAt                    DateTime?
+
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ActiveSession {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String    @db.ObjectId
+  sessionToken              String    @unique
+  expiresAt                 DateTime
+  ipAddress                 String?
+  userAgent                 String?
+  createdAt                 DateTime  @default(now())
+
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  groupId                   String    @db.ObjectId
+  userId                    String    @db.ObjectId
+  token                     String    @unique
+  expiresAt                 DateTime
+  createdAt                 DateTime  @default(now())
+
+  group                     SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user                      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CredentialAccessLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  groupId   String   @db.ObjectId
+  userId    String   @db.ObjectId
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  group SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Admin {
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  email               String    @unique
+  password            String
+  apiKey              String    @unique
+  twoFactorSecret     String?
+  isTwoFactorEnabled  Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  auditLogs           AuditLog[]
+}

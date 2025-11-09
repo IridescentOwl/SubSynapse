@@ -26,13 +26,24 @@ export interface MySubscription extends SubscriptionGroup {
   endDate?: string;
 }
 
+import { ROLES } from "./constants";
+export type Role = typeof ROLES[keyof typeof ROLES];
+
 export interface User {
-    id: string;
-    name: string;
-    email: string;
-    avatarUrl: string;
-    memberSince: string;
-    creditBalance: number;
+  id: string;
+  name: string;
+  email: string;
+
+  // your existing fields
+  avatarUrl: string;
+  memberSince: string;
+  creditBalance: number;
+
+  // ✅ required for admin panel
+  role: Role;           // "admin" | "user"
+  isActive: boolean;    // enabled / disabled
+  createdAt: string;    // ISO timestamp
 }
+
 
 export type IconName = 'netflix' | 'spotify' | 'youtube' | 'disney' | 'hbo' | 'office' | 'adobe' | 'canva';

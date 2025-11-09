@@ -1,31 +1,58 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { AuroraBackground } from './components/ui/aurora-background';
-import Header from './components/Header';
-import HomePage from './HomePage';
-import DashboardPage from './DashboardPage';
-import ProfilePage from './ProfilePage';
-import ManageSubscriptionModal from './components/ManageSubscriptionModal';
-import CreateGroupModal from './components/CreateGroupModal';
-import JoinGroupModal from './components/JoinGroupModal';
-import AddCreditsModal from './components/AddCreditsModal';
-import AuthModal from './components/AuthModal';
-import WithdrawCreditsModal from './components/WithdrawCreditsModal';
-import type { MySubscription, SubscriptionGroup } from './types';
-import { useAuth } from './AuthContext';
-import * as api from './services/api';
+// App.tsx
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
 
+import { AuroraBackground } from "./components/ui/aurora-background";
 
-export type Page = 'home' | 'dashboard' | 'profile';
-export type DashboardTab = 'explore' | 'dashboard';
-export type AppState = 'loading' | 'panning' | 'finished';
+import Header from "./components/Header";
+import HomePage from "./HomePage";
+import DashboardPage from "./DashboardPage";
+import ProfilePage from "./ProfilePage";
+import ManageSubscriptionModal from "./components/ManageSubscriptionModal";
+import CreateGroupModal from "./components/CreateGroupModal";
+import JoinGroupModal from "./components/JoinGroupModal";
+import AddCreditsModal from "./components/AddCreditsModal";
+import AuthModal from "./components/AuthModal";
+import WithdrawCreditsModal from "./components/WithdrawCreditsModal";
 
-function App() {
-  const [page, setPage] = useState<Page>('home');
-  const [activeDashboardTab, setActiveDashboardTab] = useState<DashboardTab>('explore');
+import type { MySubscription, SubscriptionGroup } from "./types";
+import { useAuth } from "./AuthContext";
+
+// Admin guards + pages
+import AdminRoute from "./components/routes/AdminRoute";
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import UsersPage from "./pages/admin/UsersPage";
+import GroupsPage from "./pages/admin/GroupsPage";
+import WithdrawalsPage from "./pages/admin/WithdrawalsPage";
+
+// ---------------------------------------------------------
+// Your existing single-page app logic wrapped as MainShell
+// ---------------------------------------------------------
+export type Page = "home" | "dashboard" | "profile";
+export type DashboardTab = "explore" | "dashboard";
+export type AppState = "loading" | "panning" | "finished";
+
+function MainShell() {
+  const [page, setPage] = useState<Page>("home");
+  const [activeDashboardTab, setActiveDashboardTab] =
+    useState<DashboardTab>("explore");
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
-  const [appState, setAppState] = useState<AppState>('loading');
-  
-  const { user, mySubscriptions, isAuthenticated, addCredits, joinGroup, leaveGroup, createGroup, requestWithdrawal, syncUserData, changePassword, updateProfilePicture } = useAuth();
+  const [appState, setAppState] = useState<AppState>("loading");
+
+  const {
+    user,
+    mySubscriptions,
+    isAuthenticated,
+    addCredits,
+    joinGroup,
+    leaveGroup,
+    createGroup,
+    requestWithdrawal,
+    syncUserData,
+    changePassword,
+    updateProfilePicture,
+  } = useAuth();
 
   // Modal States
   const [isManageModalOpen, setManageModalOpen] = useState(false);
@@ -35,13 +62,14 @@ function App() {
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [isWithdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [groupToJoin, setGroupToJoin] = useState<SubscriptionGroup | null>(null);
-  const [selectedSubscription, setSelectedSubscription] = useState<MySubscription | null>(null);
+  const [selectedSubscription, setSelectedSubscription] =
+    useState<MySubscription | null>(null);
 
   const lastScrollY = useRef(0);
 
   useEffect(() => {
-    const timer1 = setTimeout(() => setAppState('panning'), 1200);
-    const timer2 = setTimeout(() => setAppState('finished'), 2200);
+    const timer1 = setTimeout(() => setAppState("panning"), 1200);
+    const timer2 = setTimeout(() => setAppState("finished"), 2200);
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
@@ -51,7 +79,7 @@ function App() {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      if (appState === 'finished') {
+      if (appState === "finished") {
         if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
           setIsHeaderVisible(false);
         } else {
@@ -60,38 +88,33 @@ function App() {
       }
       lastScrollY.current = currentScrollY;
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [appState]);
 
   useEffect(() => {
     if (isAuthenticated) {
       setAuthModalOpen(false);
-      if (page === 'home') {
-        setPage('dashboard');
-      }
+      if (page === "home") setPage("dashboard");
     } else {
-      setPage('home');
+      setPage("home");
     }
   }, [isAuthenticated, page]);
 
   const handleLogout = () => {
     const { logout } = useAuth();
     logout();
-    setPage('home');
+    setPage("home");
     window.scrollTo(0, 0);
   };
-  
-  const handleNavigate = (newPage: Page, tab: DashboardTab = 'explore') => {
-    if ((newPage === 'dashboard' || newPage === 'profile') && !isAuthenticated) {
+
+  const handleNavigate = (newPage: Page, tab: DashboardTab = "explore") => {
+    if ((newPage === "dashboard" || newPage === "profile") && !isAuthenticated) {
       setAuthModalOpen(true);
       return;
     }
-    
     setPage(newPage);
-    if (newPage === 'dashboard') {
-      setActiveDashboardTab(tab);
-    }
+    if (newPage === "dashboard") setActiveDashboardTab(tab);
     window.scrollTo(0, 0);
   };
 
@@ -99,16 +122,16 @@ function App() {
     setSelectedSubscription(subscription);
     setManageModalOpen(true);
   };
-  
+
   const handleOpenJoinModal = (group: SubscriptionGroup) => {
     if (!isAuthenticated) {
-        setAuthModalOpen(true);
-        return;
+      setAuthModalOpen(true);
+      return;
     }
     setGroupToJoin(group);
     setJoinGroupModalOpen(true);
   };
-  
+
   const handleJoinGroup = async (subscription: MySubscription, cost: number) => {
     await joinGroup(subscription, cost);
   };
@@ -116,7 +139,7 @@ function App() {
   const handleCloseJoinModalAndSync = () => {
     setJoinGroupModalOpen(false);
     syncUserData();
-  }
+  };
 
   const handleLeaveGroup = async (subscriptionId: string, refund: number = 0) => {
     await leaveGroup(subscriptionId, refund);
@@ -132,52 +155,63 @@ function App() {
     await requestWithdrawal(amount, upiId);
     setWithdrawModalOpen(false);
   };
-  
-  const handleCreateGroup = async (groupData: Omit<SubscriptionGroup, 'id' | 'postedBy' | 'slotsFilled'>) => {
-      await createGroup(groupData);
-      setCreateGroupModalOpen(false);
-      handleNavigate('dashboard', 'dashboard');
+
+  const handleCreateGroup = async (
+    groupData: Omit<SubscriptionGroup, "id" | "postedBy" | "slotsFilled">
+  ) => {
+    await createGroup(groupData);
+    setCreateGroupModalOpen(false);
+    handleNavigate("dashboard", "dashboard");
   };
 
   const handleOpenCreateGroupModal = () => {
     if (!isAuthenticated) {
-        setAuthModalOpen(true);
-        return;
+      setAuthModalOpen(true);
+      return;
     }
     setCreateGroupModalOpen(true);
   };
-  
+
   const renderPage = () => {
-    const currentPage = isAuthenticated ? page : 'home';
+    const currentPage = isAuthenticated ? page : "home";
     switch (currentPage) {
-      case 'dashboard':
-        return <DashboardPage 
+      case "dashboard":
+        return (
+          <DashboardPage
             activeTab={activeDashboardTab}
             setActiveTab={setActiveDashboardTab}
             mySubscriptions={mySubscriptions || []}
             onManageSubscription={handleOpenManageModal}
             onJoinGroup={handleOpenJoinModal}
-            />;
-      case 'profile':
-        return user ? <ProfilePage 
-                        user={user} 
-                        onAddCredits={() => setAddCreditsModalOpen(true)} 
-                        onWithdrawCredits={() => setWithdrawModalOpen(true)}
-                        onChangePassword={changePassword}
-                        onUpdateProfilePicture={updateProfilePicture}
-                      /> : null;
-      case 'home':
+          />
+        );
+      case "profile":
+        return user ? (
+          <ProfilePage
+            user={user}
+            onAddCredits={() => setAddCreditsModalOpen(true)}
+            onWithdrawCredits={() => setWithdrawModalOpen(true)}
+            onChangePassword={changePassword}
+            onUpdateProfilePicture={updateProfilePicture}
+          />
+        ) : null;
+      case "home":
       default:
-        return <HomePage onLogin={() => setAuthModalOpen(true)} isReady={appState === 'finished'} />;
+        return (
+          <HomePage
+            onLogin={() => setAuthModalOpen(true)}
+            isReady={appState === "finished"}
+          />
+        );
     }
   };
 
   return (
     <AuroraBackground>
       <div className="relative z-10">
-        <Header 
+        <Header
           isVisible={isHeaderVisible}
-          page={isAuthenticated ? page : 'home'}
+          page={isAuthenticated ? page : "home"}
           user={user}
           activeDashboardTab={activeDashboardTab}
           onNavigate={handleNavigate}
@@ -187,16 +221,18 @@ function App() {
           onCreateGroup={handleOpenCreateGroupModal}
           onAddCredits={() => setAddCreditsModalOpen(true)}
         />
-        {appState !== 'loading' && renderPage()}
+        {appState !== "loading" && renderPage()}
       </div>
+
       {selectedSubscription && (
-        <ManageSubscriptionModal 
+        <ManageSubscriptionModal
           isOpen={isManageModalOpen}
           onClose={() => setManageModalOpen(false)}
           subscription={selectedSubscription}
           onLeaveGroup={handleLeaveGroup}
         />
       )}
+
       {groupToJoin && user && (
         <JoinGroupModal
           isOpen={isJoinGroupModalOpen}
@@ -207,16 +243,19 @@ function App() {
           onAddCredits={() => setAddCreditsModalOpen(true)}
         />
       )}
+
       <CreateGroupModal
         isOpen={isCreateGroupModalOpen}
         onClose={() => setCreateGroupModalOpen(false)}
         onCreateGroup={handleCreateGroup}
       />
+
       <AddCreditsModal
         isOpen={isAddCreditsModalOpen}
         onClose={() => setAddCreditsModalOpen(false)}
         onAddCredits={handleAddCredits}
       />
+
       {user && (
         <WithdrawCreditsModal
           isOpen={isWithdrawModalOpen}
@@ -225,12 +264,32 @@ function App() {
           onConfirmWithdrawal={handleRequestWithdrawal}
         />
       )}
-      <AuthModal 
-        isOpen={isAuthModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-      />
+
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setAuthModalOpen(false)} />
     </AuroraBackground>
   );
 }
 
-export default App;
+// ---------------------------------------------------------
+// Router wrapper: mounts MainShell on "/" and admin on "/admin/*"
+// ---------------------------------------------------------
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Your existing experience (home/dashboard/profile handled internally) */}
+        <Route path="/*" element={<MainShell />} />
+
+        {/* Admin area (role-protected) */}
+        <Route element={<AdminRoute />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="users" element={<UsersPage />} />
+            <Route path="groups" element={<GroupsPage />} />
+            <Route path="withdrawals" element={<WithdrawalsPage />} />
+          </Route>
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}

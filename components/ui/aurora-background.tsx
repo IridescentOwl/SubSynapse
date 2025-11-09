@@ -1,24 +1,24 @@
-import { cn } from '../../lib/utils';
-import React, { ReactNode } from "react";
+import React from "react";
+import { cn } from "../../lib/utils";
 
-interface AuroraBackgroundProps extends React.HTMLProps<HTMLDivElement> {
-  children: ReactNode;
-  showRadialGradient?: boolean;
-}
+type AuroraBackgroundProps = React.PropsWithChildren<
+  React.HTMLAttributes<HTMLDivElement> & {
+    showRadialGradient?: boolean;
+  }
+>;
 
-// FIX: Refactored props handling to resolve TypeScript error with `className`.
-// `className` is now safely accessed from `props` and correctly merged.
-export const AuroraBackground = ({
+export function AuroraBackground({
   children,
   showRadialGradient = true,
-  ...props
-}: AuroraBackgroundProps) => {
+  className,
+  ...rest
+}: AuroraBackgroundProps) {
   return (
     <div
-      {...props}
+      {...rest}
       className={cn(
         "relative min-h-screen bg-zinc-900 text-slate-50 transition-bg",
-        props.className
+        className
       )}
     >
       <div className="absolute inset-0 overflow-hidden">
@@ -32,17 +32,16 @@ export const AuroraBackground = ({
             [background-position:50%_50%,50%_50%]
             filter blur-[10px] invert-0
             after:content-[""] after:absolute after:inset-0 after:[background-image:var(--dark-gradient),var(--aurora)]
-            after:[background-size:200%,_100%] 
+            after:[background-size:200%,_100%]
             after:animate-[aurora_60s_linear_infinite] after:[background-attachment:fixed] after:mix-blend-difference
             pointer-events-none
             absolute -inset-[10px] opacity-40 will-change-transform`,
-
             showRadialGradient &&
               `[mask-image:radial-gradient(ellipse_at_100%_0%,black_10%,var(--transparent)_70%)]`
           )}
-        ></div>
+        />
       </div>
-      {/* This style block is necessary to define the CSS variables for the gradient colors. */}
+
       <style>{`
         @property --purple { syntax: "<color>"; initial-value: #9333ea; inherits: false; }
         @property --violet { syntax: "<color>"; initial-value: #7c3aed; inherits: false; }
@@ -52,7 +51,8 @@ export const AuroraBackground = ({
         @property --black { syntax: "<color>"; initial-value: #000; inherits: false; }
         @property --transparent { syntax: "<color>"; initial-value: transparent; inherits: false; }
       `}</style>
+
       {children}
     </div>
   );
-};
+}

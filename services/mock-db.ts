@@ -1,184 +1,251 @@
-import type { SubscriptionGroup, MySubscription, User } from '../types';
+// services/mock-db.ts
+import type { SubscriptionGroup, MySubscription, User } from "../types";
 
+/**
+ * USERS
+ * - Includes a seeded admin for the admin portal login.
+ * - All users now have role, isActive, createdAt to satisfy the new User type.
+ */
 export const MOCK_USERS: User[] = [
-    {
-        id: 'user-1',
-        name: 'Alex Doe',
-        email: 'alex.doe@example.com',
-        avatarUrl: `https://api.dicebear.com/8.x/adventurer/svg?seed=Alex`,
-        memberSince: 'January 15, 2024',
-        creditBalance: 5000,
-    }
+  {
+    id: "u-admin",
+    name: "Admin",
+    email: "admin@example.com",
+    avatarUrl:
+      "https://api.dicebear.com/8.x/adventurer/svg?seed=Admin",
+    memberSince: "January 1, 2024",
+    creditBalance: 9999,
+    role: "admin",
+    isActive: true,
+    createdAt: "2024-01-01T00:00:00.000Z",
+  },
+  {
+    id: "user-1",
+    name: "Alex Doe",
+    email: "alex.doe@example.com",
+    avatarUrl:
+      "https://api.dicebear.com/8.x/adventurer/svg?seed=Alex",
+    memberSince: "January 15, 2024",
+    creditBalance: 5000,
+    role: "user",
+    isActive: true,
+    createdAt: new Date("2024-01-15T10:00:00.000Z").toISOString(),
+  },
 ];
 
+/**
+ * GROUPS
+ */
 export const MOCK_GROUPS: SubscriptionGroup[] = [
   {
-    id: '1',
-    name: 'Netflix Premium',
-    icon: 'netflix',
+    id: "1",
+    name: "Netflix Premium",
+    icon: "netflix",
     totalPrice: 1660,
     slotsTotal: 4,
     slotsFilled: 2,
-    tags: ['4K', 'UHD', 'Movies', 'Series'],
-    category: 'Video',
-    postedBy: { name: 'Alex T.', rating: 4.9 },
-    status: 'active',
+    tags: ["4K", "UHD", "Movies", "Series"],
+    category: "Video",
+    postedBy: { name: "Alex T.", rating: 4.9 },
+    status: "active",
     credentials: {
-      username: 'netflix-family@email.com',
-      password: 'SuperSecretPassword1'
+      username: "netflix-family@email.com",
+      password: "SuperSecretPassword1",
     },
-    proof: 'https://i.imgur.com/receipt.png'
+    proof: "https://i.imgur.com/receipt.png",
   },
   {
-    id: '2',
-    name: 'Spotify Family',
-    icon: 'spotify',
+    id: "2",
+    name: "Spotify Family",
+    icon: "spotify",
     totalPrice: 1327,
     slotsTotal: 6,
     slotsFilled: 5,
-    tags: ['Music', 'Ad-free', 'Podcast'],
-    category: 'Music',
-    postedBy: { name: 'Maria S.', rating: 4.8 },
-    status: 'active',
+    tags: ["Music", "Ad-free", "Podcast"],
+    category: "Music",
+    postedBy: { name: "Maria S.", rating: 4.8 },
+    status: "active",
     credentials: {
-      username: 'spotify-squad@email.com',
-      password: 'MusicIsLife!23'
+      username: "spotify-squad@email.com",
+      password: "MusicIsLife!23",
     },
-    proof: 'https://i.imgur.com/receipt.png'
+    proof: "https://i.imgur.com/receipt.png",
   },
   {
-    id: '3',
-    name: 'YouTube Premium',
-    icon: 'youtube',
+    id: "3",
+    name: "YouTube Premium",
+    icon: "youtube",
     totalPrice: 1908,
     slotsTotal: 5,
     slotsFilled: 1,
-    tags: ['Ad-free', 'Music', 'Background Play'],
-    category: 'Video',
-    postedBy: { name: 'David L.', rating: 4.7 },
-    status: 'active',
-     credentials: {
-      username: 'youtube-premium@email.com',
-      password: 'NoMoreAds!YT'
+    tags: ["Ad-free", "Music", "Background Play"],
+    category: "Video",
+    postedBy: { name: "David L.", rating: 4.7 },
+    status: "active",
+    credentials: {
+      username: "youtube-premium@email.com",
+      password: "NoMoreAds!YT",
     },
-    proof: 'https://i.imgur.com/receipt.png'
+    proof: "https://i.imgur.com/receipt.png",
   },
   {
-    id: '4',
-    name: 'Disney+ Bundle',
-    icon: 'disney',
+    id: "4",
+    name: "Disney+ Bundle",
+    icon: "disney",
     totalPrice: 1244,
     slotsTotal: 4,
     slotsFilled: 3,
-    tags: ['Marvel', 'Star Wars', 'Pixar'],
-    category: 'Video',
-    postedBy: { name: 'Sophia C.', rating: 5.0 },
-    status: 'active',
+    tags: ["Marvel", "Star Wars", "Pixar"],
+    category: "Video",
+    postedBy: { name: "Sophia C.", rating: 5.0 },
+    status: "active",
     credentials: {
-      username: 'disney-fan-club@email.com',
-      password: 'MickeyMouse1928'
+      username: "disney-fan-club@email.com",
+      password: "MickeyMouse1928",
     },
-    proof: 'https://i.imgur.com/receipt.png'
+    proof: "https://i.imgur.com/receipt.png",
   },
   {
-    id: '5',
-    name: 'HBO Max',
-    icon: 'hbo',
+    id: "5",
+    name: "HBO Max",
+    icon: "hbo",
     totalPrice: 1327,
     slotsTotal: 3,
     slotsFilled: 3,
-    tags: ['Movies', 'Series', 'Originals'],
-    category: 'Video',
-    postedBy: { name: 'Chris P.', rating: 4.6 },
-    status: 'full',
+    tags: ["Movies", "Series", "Originals"],
+    category: "Video",
+    postedBy: { name: "Chris P.", rating: 4.6 },
+    status: "full",
     credentials: {
-      username: 'hbo-watchers@email.com',
-      password: 'GoT_FinaleSucks'
+      username: "hbo-watchers@email.com",
+      password: "GoT_FinaleSucks",
     },
-    proof: 'https://i.imgur.com/receipt.png'
+    proof: "https://i.imgur.com/receipt.png",
   },
   {
-    id: '6',
-    name: 'Microsoft 365 Family',
-    icon: 'office',
+    id: "6",
+    name: "Microsoft 365 Family",
+    icon: "office",
     totalPrice: 830,
     slotsTotal: 6,
     slotsFilled: 4,
-    tags: ['Office', 'Productivity', 'Cloud'],
-    category: 'Productivity',
-    postedBy: { name: 'Emily R.', rating: 4.9 },
-    status: 'active',
+    tags: ["Office", "Productivity", "Cloud"],
+    category: "Productivity",
+    postedBy: { name: "Emily R.", rating: 4.9 },
+    status: "active",
     credentials: {
-      username: 'office-pros@email.com',
-      password: 'ExcelIsFun$1'
+      username: "office-pros@email.com",
+      password: "ExcelIsFun$1",
     },
-    proof: 'https://i.imgur.com/receipt.png'
+    proof: "https://i.imgur.com/receipt.png",
   },
-   {
-    id: '7',
-    name: 'Adobe Creative Cloud',
-    icon: 'adobe',
+  {
+    id: "7",
+    name: "Adobe Creative Cloud",
+    icon: "adobe",
     totalPrice: 4564,
     slotsTotal: 2,
     slotsFilled: 1,
-    tags: ['Design', 'Photo', 'Video'],
-    category: 'Design',
-    postedBy: { name: 'Jordan B.', rating: 4.8 },
-    status: 'pending_review',
+    tags: ["Design", "Photo", "Video"],
+    category: "Design",
+    postedBy: { name: "Jordan B.", rating: 4.8 },
+    status: "pending_review",
     credentials: {
-      username: 'adobe-creatives@email.com',
-      password: 'PhotoshopMaster!2'
+      username: "adobe-creatives@email.com",
+      password: "PhotoshopMaster!2",
     },
-    proof: 'https://i.imgur.com/receipt.png'
+    proof: "https://i.imgur.com/receipt.png",
   },
   {
-    id: '8',
-    name: 'Canva Pro Team',
-    icon: 'canva',
+    id: "8",
+    name: "Canva Pro Team",
+    icon: "canva",
     totalPrice: 2489,
     slotsTotal: 5,
     slotsFilled: 2,
-    tags: ['Design', 'Templates', 'Social Media'],
-    category: 'Design',
-    postedBy: { name: 'Olivia M.', rating: 5.0 },
-    status: 'active',
+    tags: ["Design", "Templates", "Social Media"],
+    category: "Design",
+    postedBy: { name: "Olivia M.", rating: 5.0 },
+    status: "active",
     credentials: {
-      username: 'canva-designers@email.com',
-      password: 'Templates4Days#'
+      username: "canva-designers@email.com",
+      password: "Templates4Days#",
     },
-    proof: 'https://i.imgur.com/receipt.png'
-  }
+    proof: "https://i.imgur.com/receipt.png",
+  },
 ];
 
-// This table links users to groups
-export const MOCK_MEMBERSHIPS: Array<Omit<MySubscription, 'postedBy' | 'tags' | 'category' | 'icon' | 'name'> & { userId: string, groupId: string }> = [
+/**
+ * MEMBERSHIPS
+ * Links users to groups. Kept your original shape; just typed precisely.
+ */
+export const MOCK_MEMBERSHIPS: Array<
+  Omit<
+    MySubscription,
+    "postedBy" | "tags" | "category" | "icon" | "name" | "credentials" | "proof"
+  > & { userId: string; groupId: string }
+> = [
   {
-    userId: 'user-1',
-    groupId: '2', // Spotify
-    id: '2',
-    membershipType: 'monthly',
-    nextPaymentDate: 'July 25, 2024',
+    userId: "user-1",
+    groupId: "2", // Spotify
+    id: "2",
+    membershipType: "monthly",
+    nextPaymentDate: "July 25, 2024",
     myShare: 221,
-    totalPrice: 1327, slotsFilled: 5, slotsTotal: 6, status: 'active'
-  },
-   {
-    userId: 'user-1',
-    groupId: '4', // Disney+
-    id: '4',
-    membershipType: 'monthly',
-    nextPaymentDate: 'July 15, 2024',
-    myShare: 311,
-    totalPrice: 1244, slotsFilled: 3, slotsTotal: 4, status: 'active'
+    totalPrice: 1327,
+    slotsFilled: 5,
+    slotsTotal: 6,
+    status: "active",
   },
   {
-    userId: 'user-1',
-    groupId: '1', // Netflix
-    id: '1',
-    membershipType: 'temporary',
+    userId: "user-1",
+    groupId: "4", // Disney+
+    id: "4",
+    membershipType: "monthly",
+    nextPaymentDate: "July 15, 2024",
+    myShare: 311,
+    totalPrice: 1244,
+    slotsFilled: 3,
+    slotsTotal: 4,
+    status: "active",
+  },
+  {
+    userId: "user-1",
+    groupId: "1", // Netflix
+    id: "1",
+    membershipType: "temporary",
     endDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), // Ends in 10 days
     myShare: 415,
-    totalPrice: 1660, slotsFilled: 2, slotsTotal: 4, status: 'active'
-  }
+    totalPrice: 1660,
+    slotsFilled: 2,
+    slotsTotal: 4,
+    status: "active",
+  },
 ];
 
-export let MOCK_WITHDRAWAL_REQUESTS: any[] = [];
+/**
+ * WITHDRAWALS
+ * Typed list to work with admin withdrawals page.
+ */
+export type MockWithdrawal = {
+  id: string;
+  userId: string;
+  userName: string;
+  amount: number;
+  upiId: string;
+  status: "pending" | "approved" | "rejected";
+  date: string; // ISO string
+};
+
+// Seed with one pending item (optional)
+export let MOCK_WITHDRAWAL_REQUESTS: MockWithdrawal[] = [
+  {
+    id: "wd-001",
+    userId: "user-1",
+    userName: "Alex Doe",
+    amount: 750,
+    upiId: "alex@upi",
+    status: "pending",
+    date: new Date().toISOString(),
+  },
+];

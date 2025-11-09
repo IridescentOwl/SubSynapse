@@ -1,5 +1,5 @@
 // App.tsx
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import React, { useState, useEffect, useRef } from "react";
 
 import { AuroraBackground } from "./components/ui/aurora-background";
@@ -34,6 +34,7 @@ export type DashboardTab = "explore" | "dashboard";
 export type AppState = "loading" | "panning" | "finished";
 
 function MainShell() {
+  const navigate = useNavigate();
   const [page, setPage] = useState<Page>("home");
   const [activeDashboardTab, setActiveDashboardTab] =
     useState<DashboardTab>("explore");
@@ -95,11 +96,15 @@ function MainShell() {
   useEffect(() => {
     if (isAuthenticated) {
       setAuthModalOpen(false);
-      if (page === "home") setPage("dashboard");
+      if (user?.role === "admin") {
+        navigate("/admin");
+      } else if (page === "home") {
+        setPage("dashboard");
+      }
     } else {
       setPage("home");
     }
-  }, [isAuthenticated, page]);
+  }, [isAuthenticated, user, page]);
 
   const handleLogout = () => {
     const { logout } = useAuth();

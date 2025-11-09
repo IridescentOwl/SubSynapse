@@ -46,4 +46,5 @@ export interface User {
 }
 
 
-export type IconName = 'netflix' | 'spotify' | 'youtube' | 'disney' | 'hbo' | 'office' | 'adobe' | 'canva';
+// This is the merged, more complete list of icons
+export type IconName = 'netflix' | 'spotify' | 'youtube' | 'hbo' | 'chatgpt' | 'swiggy' | 'zomato' | 'applemusic' | 'claude' | 'adobe' | 'canva' | 'disney' | 'office';

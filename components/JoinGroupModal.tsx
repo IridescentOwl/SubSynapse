@@ -30,9 +30,17 @@ const CredentialRow: React.FC<{ label: string; value: string; isPassword?: boole
           {isVisible ? value : '••••••••••••'}
         </span>
         {isPassword && (
-          <button onClick={() => setIsVisible(!isVisible)} className="text-slate-400 hover:text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              {isVisible ? <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" /> : <path d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.367zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM10 18a8 8 0 100-16 8 8 0 000 16z" />}
+          <button onClick={() => setIsVisible(!isVisible)} className="text-slate-400 hover:text-white" aria-label={isVisible ? "Hide password" : "Show password"}>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+              {isVisible ? (
+                <>
+                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                  {/* use object spread to avoid esbuild JSX parsing bug */}
+                  <path {...{ fillRule: "evenodd" } as any} d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" {...{ clipRule: "evenodd" } as any} />
+                </>
+              ) : (
+                <path d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.367zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM10 18a8 8 0 100-16 8 8 0 000 16z" />
+              )}
             </svg>
           </button>
         )}
@@ -113,8 +121,8 @@ const JoinGroupModal: React.FC<JoinGroupModalProps> = ({ isOpen, onClose, group,
         hasAnimation
         isReady={isOpen}
       >
-        <button onClick={resetAndClose} className="absolute top-4 right-4 text-slate-400 hover:text-white transition">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <button onClick={resetAndClose} className="absolute top-4 right-4 text-slate-400 hover:text-white transition" aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
@@ -122,8 +130,8 @@ const JoinGroupModal: React.FC<JoinGroupModalProps> = ({ isOpen, onClose, group,
         {joinState === 'success' ? (
           <div className="text-center animate-fade-in-down">
             <div className="w-16 h-16 mx-auto mb-4 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                <path {...{ fillRule: "evenodd" } as any} d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" {...{ clipRule: "evenodd" } as any} />
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Successfully Joined!</h2>
@@ -192,7 +200,9 @@ const JoinGroupModal: React.FC<JoinGroupModalProps> = ({ isOpen, onClose, group,
                 <p className="text-sm text-slate-400 mb-2">Your current balance: <span className="font-semibold text-amber-300">{userCredits.toLocaleString()} Credits</span></p>
                 {!hasEnoughCredits && (
                     <div className="text-sm text-red-400 mb-4 p-3 bg-red-500/10 rounded-lg flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                          <path {...{ fillRule: "evenodd" } as any} d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" {...{ clipRule: "evenodd" } as any} />
+                        </svg>
                         <span>Insufficient credits.</span>
                         <button onClick={onAddCredits} className="font-semibold underline hover:text-red-300">Add more?</button>
                     </div>

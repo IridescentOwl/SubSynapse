@@ -1,0 +1,91 @@
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export const options = {
+  stages: [
+    { duration: '30s', target: 20 },
+    { duration: '1m30s', target: 10 },
+    { duration: '20s', target: 0 },
+  ],
+};
+
+const API_BASE_URL = 'http://localhost:4000/api';
+
+const login = (email, password) => {
+  const res = http.post(`${API_BASE_URL}/auth/login`, JSON.stringify({ email, password }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return res.json('accessToken');
+};
+
+export default function () {
+  // Test the getGroups endpoint
+  const getGroupsRes = http.get(`${API_BASE_URL}/subscription-groups`);
+  check(getGroupsRes, { 'getGroups: status was 200': (r) => r.status === 200 });
+
+  sleep(1);
+
+  // Test the addCredits endpoint
+  const authToken = login('testuser@thapar.edu', 'password123');
+  if (authToken) {
+    const addCreditsPayload = JSON.stringify({
+      amount: 100,
+      paymentGatewayId: `txn_${__VU}_${__ITER}`,
+    });
+
+    const addCreditsRes = http.post(
+      `${API_BASE_URL}/payments/add-credits`,
+      addCreditsPayload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    check(addCreditsRes, {
+      'addCredits: status was 200': (r) => r.status === 200,
+    });
+
+    sleep(1);
+
+    // Test the withdraw-request endpoint
+    const withdrawRequestPayload = JSON.stringify({
+      amount: 50,
+      upiId: 'test@upi',
+    });
+
+    const withdrawRequestRes = http.post(
+      `${API_BASE_URL}/payments/withdraw-request`,
+      withdrawRequestPayload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    check(withdrawRequestRes, {
+      'withdraw-request: status was 200': (r) => r.status === 200,
+    });
+  }
+
+  // Test the joinGroup endpoint (requires a valid group ID and authenticated user)
+  // In a real test, you would fetch a valid group ID from the getGroups response
+  // and use a pre-registered user's credentials.
+  /*
+  const authToken = login('testuser@example.com', 'password123');
+  const groupId = 'some-valid-group-id';
+
+  const joinGroupRes = http.post(
+    `${API_BASE_URL}/subscription-groups/join/${groupId}`,
+    null,
+    {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
+    }
+  );
+  check(joinGroupRes, { 'joinGroup: status was 200': (r) => r.status === 200 });
+  */
+}

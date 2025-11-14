@@ -1,16 +1,7 @@
-// This is a mock API service layer. In a real application, this would make
-// HTTP requests to your backend. For this demo, it simulates async operations
-// and manages data in memory.
-
 import type { User, SubscriptionGroup, MySubscription } from '../types.ts';
-import { MOCK_USERS, MOCK_GROUPS, MOCK_MEMBERSHIPS, MOCK_WITHDRAWAL_REQUESTS } from './mock-db.ts';
 
-let users = [...MOCK_USERS];
-let groups = [...MOCK_GROUPS];
-let memberships = [...MOCK_MEMBERSHIPS];
-let withdrawalRequests = [...MOCK_WITHDRAWAL_REQUESTS];
-
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+const API_URL = import.meta.env.VITE_SUPABASE_URL;
+const API_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const getAuthToken = (): string | null => localStorage.getItem('authToken');
 const setAuthToken = (token: string | null) => {
@@ -21,214 +12,232 @@ const setAuthToken = (token: string | null) => {
     }
 };
 
-// MOCK JWT: in a real app, this would be a real, signed JWT
-const createToken = (userId: string) => `mock-jwt-for-user-${userId}`;
-const getUserIdFromToken = (token: string): string | null => {
-    const match = token.match(/mock-jwt-for-user-(.*)/);
-    return match ? match[1] : null;
+const getRefreshToken = (): string | null => localStorage.getItem('refreshToken');
+const setRefreshToken = (token: string | null) => {
+    if (token) {
+        localStorage.setItem('refreshToken', token);
+    } else {
+        localStorage.removeItem('refreshToken');
+    }
 };
 
-export const login = async (email: string, password: string): Promise<{ token: string, user: User }> => {
-    await delay(500);
-    
-    // Test credentials that bypass password checker
-    if (email === 'subsynapse_test@thapar.edu' && password === 'X9#mK2$pL@8vQ!nR5wE*') {
-        const testUser: User = {
-            id: 'test-user-001',
-            name: 'Test User',
-            email: 'subsynapse_test@thapar.edu',
-            creditBalance: 1000,
-            avatarUrl: 'https://api.dicebear.com/8.x/adventurer/svg?seed=TestUser',
-            memberSince: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-        };
-        const token = createToken(testUser.id);
-        setAuthToken(token);
-        return { token, user: testUser };
+async function apiCall(endpoint: string, options: RequestInit = {}) {
+    const token = getAuthToken();
+    const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'apikey': API_KEY,
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...options.headers,
+    };
+
+    const response = await fetch(`${API_URL}/functions/v1${endpoint}`, {
+        ...options,
+        headers,
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Request failed');
     }
 
-    const user = users.find(u => u.email === email);
-    // In a real app, you would compare a hashed password
-    if (user && password === 'password123') {
-        const token = createToken(user.id);
-        setAuthToken(token);
-        return { token, user };
-    }
-    throw new Error('Invalid credentials');
+    return response.json();
+}
+
+export const login = async (email: string, password: string): Promise<{ token: string, user: User }> => {
+    const data = await apiCall('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+    });
+
+    setAuthToken(data.accessToken);
+    setRefreshToken(data.refreshToken);
+
+    const user: User = {
+        id: data.user.id,
+        name: data.user.full_name,
+        email: data.user.email,
+        creditBalance: data.user.credits || 0,
+        avatarUrl: `https://api.dicebear.com/8.x/adventurer/svg?seed=${data.user.full_name}`,
+        memberSince: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+    };
+
+    return { token: data.accessToken, user };
 };
 
 export const register = async (name: string, email: string, password: string): Promise<{ token: string, user: User }> => {
-    await delay(700);
-    if (users.some(u => u.email === email)) {
-        throw new Error('User already exists');
-    }
-    const newUser: User = {
-        id: `user-${Date.now()}`,
+    const data = await apiCall('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: name, email, password }),
+    });
+
+    const user: User = {
+        id: data.userId,
         name,
         email,
-        creditBalance: 1000, // Welcome bonus!
+        creditBalance: 1000,
         avatarUrl: `https://api.dicebear.com/8.x/adventurer/svg?seed=${name}`,
         memberSince: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
     };
-    users.push(newUser);
-    const token = createToken(newUser.id);
-    setAuthToken(token);
-    return { token, user: newUser };
+
+    const loginData = await login(email, password);
+    return loginData;
 };
 
 export const logout = () => {
     setAuthToken(null);
+    setRefreshToken(null);
 };
 
 export const fetchAuthenticatedUser = async (): Promise<User | null> => {
-    await delay(300);
     const token = getAuthToken();
     if (!token) return null;
-    
-    const userId = getUserIdFromToken(token);
-    if (!userId) return null;
 
-    // Handle test user specially since it's not in the users array
-    if (userId === 'test-user-001') {
+    try {
+        const data = await apiCall('/credits/balance', { method: 'GET' });
+
+        const decoded = JSON.parse(atob(token.split('.')[1]));
+
         return {
-            id: 'test-user-001',
-            name: 'Test User',
-            email: 'subsynapse_test@thapar.edu',
-            creditBalance: 1000,
-            avatarUrl: 'https://api.dicebear.com/8.x/adventurer/svg?seed=TestUser',
+            id: decoded.userId,
+            name: decoded.full_name || 'User',
+            email: decoded.email || '',
+            creditBalance: data.balance || 0,
+            avatarUrl: `https://api.dicebear.com/8.x/adventurer/svg?seed=${decoded.userId}`,
             memberSince: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
         };
+    } catch (error) {
+        console.error('Failed to fetch user:', error);
+        return null;
     }
-
-    return users.find(u => u.id === userId) || null;
 };
 
 export const fetchGroups = async (): Promise<SubscriptionGroup[]> => {
-    await delay(800);
-    return groups;
+    const data = await apiCall('/groups', { method: 'GET' });
+
+    return data.groups.map((group: any) => ({
+        id: group.id,
+        name: group.name,
+        icon: group.icon,
+        totalPrice: group.total_price,
+        slotsTotal: group.slots_total,
+        slotsFilled: group.slots_filled,
+        tags: group.tags || [],
+        category: group.category,
+        status: group.status,
+        credentials: null,
+        postedBy: {
+            name: group.created_by_user?.full_name || 'Unknown',
+            rating: 5.0,
+        },
+    }));
 };
 
 export const fetchMySubscriptions = async (): Promise<MySubscription[]> => {
-    await delay(400);
-    const user = await fetchAuthenticatedUser();
-    if (!user) return [];
-    
-    const myMembershipIds = memberships.filter(m => m.userId === user.id).map(m => m.groupId);
-    const myGroupData = groups.filter(g => myMembershipIds.includes(g.id));
+    const data = await apiCall('/groups/my', { method: 'GET' });
 
-    return myGroupData.map(group => {
-        const membershipInfo = memberships.find(m => m.groupId === group.id && m.userId === user.id)!;
+    return data.subscriptions.map((membership: any) => {
+        const group = membership.group;
         return {
-            ...group,
-            myShare: membershipInfo.myShare,
-            membershipType: membershipInfo.membershipType,
-            endDate: membershipInfo.endDate,
-            nextPaymentDate: membershipInfo.nextPaymentDate,
-            credentials: { // Only send credentials to members
-                username: group.credentials!.username,
-                password: group.credentials!.password,
-            }
+            id: group.id,
+            name: group.name,
+            icon: group.icon,
+            totalPrice: group.total_price,
+            slotsTotal: group.slots_total,
+            slotsFilled: group.slots_filled,
+            tags: group.tags || [],
+            category: group.category,
+            status: group.status,
+            myShare: membership.share_amount,
+            membershipType: membership.membership_type,
+            endDate: membership.end_date,
+            nextPaymentDate: membership.next_payment_date,
+            credentials: null,
+            postedBy: {
+                name: group.created_by_user?.full_name || 'Unknown',
+                rating: 5.0,
+            },
         };
     });
 };
 
 export const joinGroup = async (subscription: MySubscription, cost: number): Promise<void> => {
-    await delay(1000);
-    const user = await fetchAuthenticatedUser();
-    if (!user) throw new Error("Not authenticated");
-    if (user.creditBalance < cost) throw new Error("Insufficient funds");
-
-    user.creditBalance -= cost;
-    const group = groups.find(g => g.id === subscription.id);
-    if (group) {
-        group.slotsFilled += 1;
-    }
-    memberships.push({
-        userId: user.id,
-        groupId: subscription.id,
-        ...subscription
+    await apiCall(`/groups/${subscription.id}/join`, {
+        method: 'POST',
+        body: JSON.stringify({}),
     });
 };
 
 export const leaveGroup = async (subscriptionId: string, refund: number): Promise<void> => {
-    await delay(600);
-    const user = await fetchAuthenticatedUser();
-    if (!user) throw new Error("Not authenticated");
-
-    user.creditBalance += refund;
-    memberships = memberships.filter(m => !(m.userId === user.id && m.groupId === subscriptionId));
-    const group = groups.find(g => g.id === subscriptionId);
-    if (group) {
-        group.slotsFilled -= 1;
-    }
+    await apiCall(`/groups/${subscriptionId}/leave`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+    });
 };
 
 export const addCredits = async (amount: number): Promise<void> => {
-    await delay(800);
-    const user = await fetchAuthenticatedUser();
-    if (!user) throw new Error("Not authenticated");
-    user.creditBalance += amount;
+    await apiCall('/credits/add', {
+        method: 'POST',
+        body: JSON.stringify({ amount }),
+    });
 };
 
 export const createGroup = async (groupData: Omit<SubscriptionGroup, 'id' | 'postedBy' | 'slotsFilled'>): Promise<SubscriptionGroup> => {
-    await delay(1200);
-    const user = await fetchAuthenticatedUser();
-    if (!user) throw new Error("Not authenticated");
+    const data = await apiCall('/groups', {
+        method: 'POST',
+        body: JSON.stringify({
+            name: groupData.name,
+            icon: groupData.icon,
+            total_price: groupData.totalPrice,
+            slots_total: groupData.slotsTotal,
+            category: groupData.category,
+            tags: groupData.tags,
+            credential_username: groupData.credentials?.username,
+            credential_password: groupData.credentials?.password,
+        }),
+    });
 
-    const newGroup: SubscriptionGroup = {
-        ...groupData,
-        id: `group-${Date.now()}`,
-        slotsFilled: 1,
-        status: 'pending_review',
+    return {
+        id: data.group.id,
+        name: data.group.name,
+        icon: data.group.icon,
+        totalPrice: data.group.total_price,
+        slotsTotal: data.group.slots_total,
+        slotsFilled: data.group.slots_filled,
+        tags: data.group.tags || [],
+        category: data.group.category,
+        status: data.group.status,
+        credentials: groupData.credentials,
         postedBy: {
-            name: user.name,
-            rating: 5.0 // Initial rating
+            name: 'You',
+            rating: 5.0,
         },
     };
-    groups.unshift(newGroup); // Add to the beginning of the list
-    return newGroup;
 };
 
 export const requestWithdrawal = async (amount: number, upiId: string): Promise<void> => {
-    await delay(1000);
-    const user = await fetchAuthenticatedUser();
-    if (!user) throw new Error("Not authenticated");
-    if (user.creditBalance < amount) throw new Error("Insufficient funds");
-    if (amount < 500) throw new Error("Minimum withdrawal amount is 500 credits.");
-    
-    user.creditBalance -= amount;
-    withdrawalRequests.push({
-        id: `wd-${Date.now()}`,
-        userId: user.id,
-        userName: user.name,
-        amount,
-        upiId,
-        status: 'pending',
-        date: new Date().toISOString()
+    await apiCall('/credits/withdraw', {
+        method: 'POST',
+        body: JSON.stringify({ amount, upi_id: upiId }),
     });
 };
 
 export const forgotPassword = async (email: string): Promise<void> => {
-    await delay(1000);
-    console.log(`Password reset link sent to ${email}`);
-    // In a real app, this would trigger a backend process to send an email.
-    return;
+    await apiCall('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+    });
 };
 
 export const changePassword = async (oldPass: string, newPass: string): Promise<void> => {
-    await delay(1000);
-    const user = await fetchAuthenticatedUser();
-    if (!user) throw new Error("Not authenticated");
-    // This is a mock check. A real backend would compare hashed passwords.
-    if (oldPass !== 'password123') {
-        throw new Error("Incorrect current password.");
-    }
-    console.log(`Password for user ${user.id} has been changed.`);
-    return;
+    await apiCall('/user/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ old_password: oldPass, new_password: newPass }),
+    });
 };
 
 export const updateProfilePicture = async (imageDataUrl: string): Promise<void> => {
-    await delay(1200);
-    const user = await fetchAuthenticatedUser();
-    if (!user) throw new Error("Not authenticated");
-    user.avatarUrl = imageDataUrl;
+    await apiCall('/user/profile', {
+        method: 'PUT',
+        body: JSON.stringify({ avatar_url: imageDataUrl }),
+    });
 };

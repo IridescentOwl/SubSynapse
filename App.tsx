@@ -106,7 +106,8 @@ function App() {
   };
   
   const handleJoinGroup = async (subscription: MySubscription, cost: number) => {
-    await joinGroup(subscription, cost);
+    const credentials = await joinGroup(subscription, cost);
+    return credentials;
   };
 
   const handleCloseJoinModalAndSync = () => {

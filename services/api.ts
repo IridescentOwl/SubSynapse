@@ -1,7 +1,26 @@
 // Real API service connecting to backend
 import type { User, SubscriptionGroup, MySubscription } from '../types.ts';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
+const trimTrailingSlash = (value: string) => value.replace(/\/+$/, '');
+const ensureLeadingSlash = (value: string) => (value.startsWith('/') ? value : `/${value}`);
+
+const resolveApiBaseUrl = (): string => {
+  const envValue = import.meta.env?.VITE_API_BASE_URL;
+  if (envValue && envValue.trim()) {
+    return trimTrailingSlash(envValue.trim());
+  }
+
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${trimTrailingSlash(window.location.origin)}/api`;
+  }
+
+  return 'http://localhost:4000/api';
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
+
+const buildApiUrl = (endpoint: string) =>
+  `${API_BASE_URL}${ensureLeadingSlash(endpoint)}`;
 
 // Helper function to get auth token
 const getAuthToken = (): string | null => {
@@ -26,6 +45,11 @@ const setAuthTokens = (accessToken: string | null, refreshToken: string | null) 
 };
 
 // Helper function to make API requests
+export type RegisterResponse = {
+  message: string;
+  verificationToken?: string;
+};
+
 const apiRequest = async (
   endpoint: string,
   options: RequestInit = {}
@@ -40,7 +64,7 @@ const apiRequest = async (
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(buildApiUrl(endpoint), {
     ...options,
     headers,
     credentials: 'include',
@@ -51,7 +75,7 @@ const apiRequest = async (
     const refreshTokenValue = getRefreshToken();
     if (refreshTokenValue) {
       try {
-        const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
+        const refreshResponse = await fetch(buildApiUrl('/auth/refresh-token'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken: refreshTokenValue }),
@@ -63,7 +87,7 @@ const apiRequest = async (
           headers['Authorization'] = `Bearer ${accessToken}`;
           
           // Retry original request
-          return fetch(`${API_BASE_URL}${endpoint}`, {
+          return fetch(buildApiUrl(endpoint), {
             ...options,
             headers,
             credentials: 'include',
@@ -224,32 +248,17 @@ export const login = async (email: string, password: string): Promise<{ token: s
   return { token: data.accessToken, user };
 };
 
-export const register = async (name: string, email: string, password: string): Promise<{ token: string, user: User }> => {
+export const register = async (name: string, email: string, password: string): Promise<RegisterResponse> => {
   const response = await apiRequest('/auth/register', {
     method: 'POST',
     body: JSON.stringify({ name, email, password }),
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    
-    // Handle validation errors from express-validator
-    if (error.errors && Array.isArray(error.errors)) {
-      const errorMessages = error.errors.map((err: any) => {
-        // Handle both old format (err.msg) and new format (err.message)
-        return err.message || err.msg || 'Validation error';
-      }).join(', ');
-      throw new Error(errorMessages || 'Validation failed');
-    }
-    
-    throw new Error(error.message || 'Registration failed');
-  }
-
   const data = await response.json();
-  
-  // After registration, user needs to verify email
-  // Throw a special error that the UI can handle
-  throw new Error('REGISTRATION_SUCCESS: Please check your email for verification OTP.');
+  return {
+    message: data.message || 'Please check your email for verification OTP.',
+    verificationToken: data.verificationToken,
+  };
 };
 
 export const verifyEmail = async (token: string): Promise<void> => {
@@ -283,7 +292,7 @@ export const logout = () => {
   const refreshToken = getRefreshToken();
   if (refreshToken) {
     // Call logout endpoint
-    fetch(`${API_BASE_URL}/auth/logout`, {
+    fetch(buildApiUrl('/auth/logout'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
@@ -328,10 +337,19 @@ export const fetchMySubscriptions = async (): Promise<MySubscription[]> => {
   }));
 };
 
-export const joinGroup = async (subscription: MySubscription, cost: number): Promise<void> => {
+export const joinGroup = async (subscription: MySubscription, cost: number): Promise<{ username: string; password?: string } | null> => {
   await apiRequest(`/subscription-groups/join/${subscription.id}`, {
     method: 'POST',
   });
+  
+  // After joining, fetch credentials
+  try {
+    const credentials = await fetchCredentials(subscription.id);
+    return credentials;
+  } catch (error) {
+    console.log('Could not fetch credentials after joining:', error);
+    return null;
+  }
 };
 
 export const leaveGroup = async (subscriptionId: string, refund: number): Promise<void> => {
@@ -340,7 +358,7 @@ export const leaveGroup = async (subscriptionId: string, refund: number): Promis
   });
 };
 
-export const addCredits = async (amount: number): Promise<void> => {
+export const addCredits = async (amount: number): Promise<{ orderId: string; amount: number; currency: string; key: string }> => {
   const response = await apiRequest('/payments/add-credits', {
     method: 'POST',
     body: JSON.stringify({ amount, currency: 'INR' }),
@@ -348,12 +366,14 @@ export const addCredits = async (amount: number): Promise<void> => {
 
   const order = await response.json();
   
-  // In a real implementation, you would redirect to Razorpay payment page
-  // For now, we'll just log the order
-  console.log('Payment order created:', order);
-  
-  // TODO: Integrate Razorpay checkout
-  throw new Error('Payment integration not yet complete. Please contact support.');
+  // Return order details for Razorpay integration
+  // The frontend can use these to initialize Razorpay checkout
+  return {
+    orderId: order.id,
+    amount: order.amount,
+    currency: order.currency,
+    key: order.key || '', // Razorpay key ID should be provided by backend or env
+  };
 };
 
 export const createGroup = async (groupData: Omit<SubscriptionGroup, 'id' | 'postedBy' | 'slotsFilled'>): Promise<SubscriptionGroup> => {
@@ -384,7 +404,7 @@ export const createGroup = async (groupData: Omit<SubscriptionGroup, 'id' | 'pos
     throw new Error('Not authenticated. Please login again.');
   }
 
-  const response = await fetch(`${API_BASE_URL}/subscription-groups`, {
+  const response = await fetch(buildApiUrl('/subscription-groups'), {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -438,7 +458,7 @@ export const updateProfilePicture = async (imageDataUrl: string): Promise<void> 
   formData.append('avatar', blob, 'avatar.jpg');
 
   const token = getAuthToken();
-  await fetch(`${API_BASE_URL}/users/upload-avatar`, {
+  const uploadResponse = await fetch(buildApiUrl('/users/upload-avatar'), {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -446,4 +466,31 @@ export const updateProfilePicture = async (imageDataUrl: string): Promise<void> 
     body: formData,
     credentials: 'include',
   });
+
+  if (!uploadResponse.ok) {
+    const error = await uploadResponse.json().catch(() => ({ message: 'Failed to upload avatar' }));
+    throw new Error(error.message || 'Failed to upload avatar');
+  }
+};
+
+export const getTransactions = async (): Promise<any[]> => {
+  const response = await apiRequest('/users/transactions');
+  return await response.json();
+};
+
+export const getWithdrawalHistory = async (): Promise<any[]> => {
+  const response = await apiRequest('/payments/withdrawal-history');
+  return await response.json();
+};
+
+export const createReview = async (groupId: string, rating: number, comment?: string): Promise<void> => {
+  await apiRequest('/reviews', {
+    method: 'POST',
+    body: JSON.stringify({ groupId, rating, comment }),
+  });
+};
+
+export const getGroupReviews = async (groupId: string): Promise<any[]> => {
+  const response = await apiRequest(`/reviews/${groupId}`);
+  return await response.json();
 };

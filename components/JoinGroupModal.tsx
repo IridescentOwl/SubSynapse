@@ -9,7 +9,7 @@ interface JoinGroupModalProps {
   onClose: () => void;
   group: SubscriptionGroup;
   userCredits: number;
-  onConfirmJoin: (subscription: MySubscription, cost: number) => Promise<void>;
+  onConfirmJoin: (subscription: MySubscription, cost: number) => Promise<{ username: string; password?: string } | null>;
   onAddCredits: () => void;
 }
 
@@ -17,6 +17,7 @@ const JoinGroupModal: React.FC<JoinGroupModalProps> = ({ isOpen, onClose, group,
   const [membershipType, setMembershipType] = useState<'monthly' | 'temporary'>('monthly');
   const [days, setDays] = useState<number>(7);
   const [joinState, setJoinState] = useState<'form' | 'joining' | 'success'>('form');
+  const [credentials, setCredentials] = useState<{ username: string; password?: string } | null>(null);
 
   const pricePerSlot = useMemo(() => group.totalPrice / group.slotsTotal, [group]);
 
@@ -57,7 +58,8 @@ const JoinGroupModal: React.FC<JoinGroupModalProps> = ({ isOpen, onClose, group,
     }
 
     try {
-      await onConfirmJoin(newSubscription, cost);
+      const creds = await onConfirmJoin(newSubscription, cost);
+      setCredentials(creds);
       setJoinState('success');
     } catch (error) {
       console.error("Failed to join group:", error);
@@ -70,6 +72,7 @@ const JoinGroupModal: React.FC<JoinGroupModalProps> = ({ isOpen, onClose, group,
     setJoinState('form');
     setMembershipType('monthly');
     setDays(7);
+    setCredentials(null);
     onClose();
   }
 
@@ -100,8 +103,8 @@ const JoinGroupModal: React.FC<JoinGroupModalProps> = ({ isOpen, onClose, group,
             <p className="text-slate-300 mb-6">Here are your credentials for {group.name}.</p>
             <div className="p-4 bg-black/20 rounded-lg mb-6">
               <div className="space-y-2">
-                  <CredentialRow label="Username" value={group.credentials?.username || 'N/A'} />
-                  <CredentialRow label="Password" value={group.credentials?.password || 'N/A'} isPassword />
+                  <CredentialRow label="Username" value={credentials?.username || 'N/A'} />
+                  <CredentialRow label="Password" value={credentials?.password || 'N/A'} isPassword />
               </div>
             </div>
             <button

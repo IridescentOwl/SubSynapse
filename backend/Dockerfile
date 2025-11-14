@@ -24,8 +24,11 @@ COPY --from=builder /app/backend/node_modules ./node_modules
 COPY --from=builder /app/backend/package*.json ./
 COPY --from=builder /app/backend/prisma ./prisma
 
+# Generate Prisma Client
+RUN npx prisma generate
+
 # Expose the port the app runs on
-EXPOSE 3000
+EXPOSE 4000
 
 # Run the application
 CMD ["npm", "run", "start"]

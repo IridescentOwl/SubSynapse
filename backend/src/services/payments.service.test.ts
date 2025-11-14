@@ -1,24 +1,27 @@
 import PaymentsService from './payments.service';
-import prisma from '../utils/prisma.util';
+import prisma from '../utils/prisma.singleton';
 import { EncryptionService } from './encryption.service';
 
-jest.mock('../utils/prisma.util', () => ({
-  user: {
-    findUnique: jest.fn(),
-    update: jest.fn(),
-  },
-  withdrawalRequest: {
-    create: jest.fn(),
-    findFirst: jest.fn(),
-    findMany: jest.fn(),
-    update: jest.fn(),
-  },
-  transaction: {
-    create: jest.fn(),
-    updateMany: jest.fn(),
-  },
-  groupMembership: {
-    findUnique: jest.fn(),
+jest.mock('../utils/prisma.singleton', () => ({
+  __esModule: true,
+  default: {
+    user: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
+    withdrawalRequest: {
+      create: jest.fn(),
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
+    },
+    transaction: {
+      create: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    groupMembership: {
+      findUnique: jest.fn(),
+    },
   },
 }));
 

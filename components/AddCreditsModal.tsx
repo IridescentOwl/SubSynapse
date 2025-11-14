@@ -6,7 +6,7 @@ declare var QRCode: any;
 interface AddCreditsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddCredits: (amount: number) => Promise<void>;
+  onAddCredits: (amount: number) => Promise<{ orderId: string; amount: number; currency: string; key: string }>;
 }
 
 const creditOptions = [500, 1000, 2500, 5000];
@@ -65,9 +65,18 @@ const AddCreditsModal: React.FC<AddCreditsModalProps> = ({ isOpen, onClose, onAd
   
   const handleConfirmPayment = async () => {
     setIsSubmitting(true);
-    await onAddCredits(finalAmount);
-    setIsSubmitting(false);
-    resetAndClose();
+    try {
+      const order = await onAddCredits(finalAmount);
+      // In production, you would initialize Razorpay checkout here with order details
+      // For now, the payment is handled via UPI and webhook will add credits
+      console.log('Payment order created:', order);
+      resetAndClose();
+    } catch (error) {
+      console.error('Failed to create payment order:', error);
+      // Error handling - could show a toast/alert here
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   const handleCustomChange = (e: React.ChangeEvent<HTMLInputElement>) => {

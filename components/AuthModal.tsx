@@ -24,6 +24,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [formState, setFormState] = useState({ name: '', email: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const { login, register, forgotPassword } = useAuth();
 
   if (!isOpen) return null;
@@ -41,7 +42,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         if (view === 'login') {
             await login(formState.email, formState.password);
         } else if (view === 'register') {
-            await register(formState.name, formState.email, formState.password);
+            const result = await register(formState.name, formState.email, formState.password);
+            const successMessage = result.verificationToken
+              ? `${result.message} (OTP: ${result.verificationToken})`
+              : result.message;
+            setFeedbackMessage(successMessage);
+            setError(null);
+            setFormState({ name: '', email: '', password: '' });
+            setView('login');
+            return;
         } else if (view === 'forgotPassword') {
             await forgotPassword(formState.email);
             setView('forgotPasswordSuccess');
@@ -56,6 +65,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const handleViewChange = (newView: AuthView) => {
     setView(newView);
     setError(null);
+  if (newView !== 'login') {
+    setFeedbackMessage(null);
+  }
     setFormState({ name: '', email: '', password: '' });
   }
 
@@ -96,6 +108,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 )}
 
                 {error && <p className="text-sm text-red-400 text-center">{error}</p>}
+                {feedbackMessage && isLoginView && !error && (
+                    <p className="text-sm text-emerald-300 text-center">{feedbackMessage}</p>
+                )}
 
                  {isLoginView && (
                     <div className="text-right">

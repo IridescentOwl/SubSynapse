@@ -4,6 +4,7 @@ import Icon from './Icon.tsx';
 import type { MySubscription } from '../types.ts';
 import { daysBetween } from '../lib/utils.ts';
 import CredentialRow from './CredentialRow.tsx';
+import * as api from '../services/api.ts';
 
 interface ManageSubscriptionModalProps {
   isOpen: boolean;
@@ -128,11 +129,23 @@ const ManageSubscriptionModal: React.FC<ManageSubscriptionModalProps> = ({ isOpe
                         <Star 
                             key={i}
                             filled={(hoverRating || rating) > i}
-                            onClick={() => setRating(i + 1)}
+                            onClick={async () => {
+                                const newRating = i + 1;
+                                setRating(newRating);
+                                try {
+                                    await api.createReview(subscription.id, newRating);
+                                } catch (error) {
+                                    console.error('Failed to submit review:', error);
+                                    setRating(0); // Reset on error
+                                }
+                            }}
                             onMouseEnter={() => setHoverRating(i + 1)}
                         />
                     ))}
                     </div>
+                    {rating > 0 && (
+                        <p className="text-sm text-emerald-300 text-center mt-2">Rating submitted!</p>
+                    )}
                 </div>
 
                 <div>

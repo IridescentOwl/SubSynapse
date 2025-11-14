@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import type { User, MySubscription, SubscriptionGroup } from './types.ts';
 import * as api from './services/api.ts';
+import type { RegisterResponse } from './services/api.ts';
 
 interface AuthContextType {
   user: User | null;
@@ -8,10 +9,10 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<RegisterResponse>;
   logout: () => void;
-  addCredits: (amount: number) => Promise<void>;
-  joinGroup: (subscription: MySubscription, cost: number) => Promise<void>;
+  addCredits: (amount: number) => Promise<{ orderId: string; amount: number; currency: string; key: string }>;
+  joinGroup: (subscription: MySubscription, cost: number) => Promise<{ username: string; password?: string } | null>;
   leaveGroup: (subscriptionId: string, refund: number) => Promise<void>;
   createGroup: (groupData: Omit<SubscriptionGroup, 'id' | 'postedBy' | 'slotsFilled'>) => Promise<void>;
   requestWithdrawal: (amount: number, upiId: string) => Promise<void>;
@@ -61,9 +62,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const register = async (name: string, email: string, password: string) => {
-    const { user } = await api.register(name, email, password);
-    setUser(user);
-    await syncUserData();
+    const result = await api.register(name, email, password);
+    setUser(null);
+    setMySubscriptions([]);
+    return result;
   };
 
   const logout = () => {
@@ -73,8 +75,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const addCredits = async (amount: number) => {
-      await api.addCredits(amount);
-      await syncUserData();
+      const order = await api.addCredits(amount);
+      // Note: In production, you would initialize Razorpay checkout here
+      // For now, we'll sync user data after payment (which would happen via webhook)
+      // In development, you might want to manually add credits after payment
+      return order;
   };
   
   const requestWithdrawal = async (amount: number, upiId: string) => {
@@ -85,7 +90,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const joinGroup = async (subscription: MySubscription, cost: number) => {
       // We don't sync here to allow the modal to show its success state.
       // Syncing will be triggered manually when the modal closes.
-      await api.joinGroup(subscription, cost);
+      const credentials = await api.joinGroup(subscription, cost);
+      return credentials;
   };
   
   const leaveGroup = async (subscriptionId: string, refund: number) => {

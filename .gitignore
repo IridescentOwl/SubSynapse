@@ -20,6 +20,8 @@ dist-ssr
 #myfiles 
 roadmap.txt
 *.md
+!README.md
+!SETUP.md
 
 # Editor directories and files
 .vscode/*

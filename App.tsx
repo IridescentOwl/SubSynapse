@@ -229,6 +229,21 @@ function App() {
         isOpen={isAuthModalOpen}
         onClose={() => setAuthModalOpen(false)}
       />
+      <footer style={{
+        textAlign: 'center',
+        padding: '2rem 1rem',
+        fontSize: '0.875rem',
+        color: 'rgba(255, 255, 255, 0.5)',
+        position: 'relative',
+        zIndex: 10
+      }}>
+        <p>&copy; {new Date().getFullYear()} Synapse. All rights reserved.</p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '0.5rem' }}>
+          <a href="/api/static/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Terms of Service</a>
+          <a href="/api/static/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy Policy</a>
+          <a href="/api/static/refund" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Refund Policy</a>
+        </div>
+      </footer>
     </AuroraBackground>
   );
 }

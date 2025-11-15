@@ -20,7 +20,6 @@ backend/package-lock.json
 
 #myfiles 
 roadmap.txt
-*.md
 
 # Editor directories and files
 .vscode/*

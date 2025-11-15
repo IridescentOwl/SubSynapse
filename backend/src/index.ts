@@ -20,6 +20,7 @@ import reviewRoutes from './routes/review.routes';
 import adminRoutes from './routes/admin.routes';
 import healthRoutes from './routes/health.routes';
 import unsubscribeRoutes from './routes/unsubscribe.routes';
+import staticRoutes from './routes/static.routes';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './utils/swagger.util';
 
@@ -85,6 +86,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', healthRoutes);
 app.use('/api/unsubscribe', unsubscribeRoutes);
+app.use('/api/static', staticRoutes);
 
 // Swagger API documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

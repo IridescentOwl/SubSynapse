@@ -243,6 +243,9 @@ function App() {
           <a href="/api/static/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy Policy</a>
           <a href="/api/static/refund" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Refund Policy</a>
         </div>
+        <div style={{ marginTop: '1rem' }}>
+          <p>Contact Us: <a href="tel:9316102594" style={{ color: 'inherit', textDecoration: 'none' }}>+91 9316102594</a> or <a href="mailto:subsynapsecampus@gmail.com" style={{ color: 'inherit', textDecoration: 'none' }}>subsynapsecampus@gmail.com</a></p>
+        </div>
       </footer>
     </AuroraBackground>
   );

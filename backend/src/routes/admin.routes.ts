@@ -143,6 +143,33 @@ router.put('/groups/:id/reject', apiKeyMiddleware, adminMiddleware, AdminControl
 
 /**
  * @swagger
+ * /admin/groups/{id}:
+ *   delete:
+ *     summary: Delete a subscription group as an admin
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *       - apiKey: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Group deleted and members refunded successfully
+ *       '401':
+ *         description: Unauthorized
+ *       '403':
+ *         description: Forbidden
+ *       '404':
+ *         description: Group not found
+ */
+router.delete('/groups/:id', apiKeyMiddleware, adminMiddleware, AdminController.deleteGroup);
+
+/**
+ * @swagger
  * /admin/users:
  *   get:
  *     summary: Get all users

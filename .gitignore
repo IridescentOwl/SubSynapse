@@ -11,7 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
-
+package-lock.json
+backend/package-lock.json
 # Environment variables
 .env.production
 .env.development
@@ -31,4 +32,4 @@ roadmap.txt
 *.njsproj
 *.sln
 *.sw?
-
+backend/uploads

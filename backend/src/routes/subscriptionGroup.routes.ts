@@ -209,6 +209,33 @@ router.delete('/:id/leave', authenticate, (req: any, res: any, next: any) => {
 
 /**
  * @swagger
+ * /subscription-groups/{id}:
+ *   delete:
+ *     summary: Delete a subscription group (owner only)
+ *     tags: [Subscription Groups]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Group deleted and members refunded successfully
+ *       '403':
+ *         description: You are not the owner of this group
+ *       '404':
+ *         description: Group not found
+ */
+router.delete('/:id', authenticate, (req: any, res: any, next: any) => {
+    clearCache('/groups');
+    SubscriptionGroupController.deleteGroup(req, res);
+});
+
+/**
+ * @swagger
  * /subscription-groups/{id}/members:
  *   get:
  *     summary: Get the members of a subscription group (owner only)

@@ -7,6 +7,8 @@ import { EmailService } from '../services/email.service';
 import { EncryptionService } from '../services/encryption.service';
 import crypto from 'crypto';
 
+import { SubscriptionGroupService } from '../services/subscriptionGroup.service';
+
 export class SubscriptionGroupController {
   public static async createGroup(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
@@ -40,20 +42,6 @@ export class SubscriptionGroupController {
       if (!proofDocument) {
         return res.status(400).json({ message: 'Proof of purchase is required (upload file or provide URL)' });
       }
-
-      // Check if user has sufficient credits
-      const user = await prisma.user.findUnique({ where: { id: ownerId } });
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-
-      if (user.creditBalance < parsedTotalPrice) {
-        return res.status(400).json({ 
-          message: `Insufficient credits. You have ${user.creditBalance} credits but need ${parsedTotalPrice}` 
-        });
-      }
-
-      await PaymentsService.debit(ownerId, parsedTotalPrice, 'new_group_creation');
 
       const group = await prisma.subscriptionGroup.create({
         data: {
@@ -369,6 +357,10 @@ export class SubscriptionGroupController {
         return res.status(404).json({ message: 'Membership not found' });
       }
 
+      if (membership.group.ownerId === userId) {
+        return res.status(403).json({ message: 'Owner cannot leave the group. You must delete it instead.' });
+      }
+
       // Deactivate the membership
       await prisma.groupMembership.update({
         where: { id: membership.id },
@@ -498,6 +490,32 @@ export class SubscriptionGroupController {
       return res.status(200).json({ averageRating });
     } catch (error) {
       log('error', 'An error occurred while fetching group rating', { error });
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  public static async deleteGroup(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    const groupId = req.params.id;
+    const userId = req.user!.id;
+
+    try {
+      const group = await prisma.subscriptionGroup.findUnique({
+        where: { id: groupId },
+      });
+
+      if (!group) {
+        return res.status(404).json({ message: 'Group not found' });
+      }
+
+      if (group.ownerId !== userId) {
+        return res.status(403).json({ message: 'You are not the owner of this group' });
+      }
+
+      await SubscriptionGroupService.deleteGroup(groupId);
+
+      return res.status(200).json({ message: 'Group deleted and members refunded successfully' });
+    } catch (error) {
+      log('error', 'An error occurred while deleting a group', { error });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }

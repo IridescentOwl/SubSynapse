@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { AdminService } from '../services/admin.service';
+import { SubscriptionGroupService } from '../services/subscriptionGroup.service';
+import { log } from '../utils/logging.util';
 
 export class AdminController {
   static async login(req: Request, res: Response) {
@@ -107,6 +109,20 @@ export class AdminController {
       res.status(200).json(report);
     } catch (error) {
       res.status(500).json({ message: 'Error generating report', error });
+    }
+  }
+
+  static async deleteGroup(req: Request, res: Response) {
+    const groupId = req.params.id;
+    try {
+      await SubscriptionGroupService.deleteGroup(groupId);
+      res.status(200).json({ message: `Group ${groupId} deleted and members refunded successfully by admin.` });
+    } catch (error: any) {
+      log('error', `Admin failed to delete group ${groupId}`, { error: error.message });
+      if (error.message === 'Group not found') {
+        return res.status(404).json({ message: 'Group not found' });
+      }
+      res.status(500).json({ message: 'Error deleting group', error: error.message });
     }
   }
 }

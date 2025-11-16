@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller';
 import { strictRateLimiter } from '../middleware/rateLimiter.middleware';
-import { validateRegistration, validateLogin, validateForgotPassword, validateResetPassword } from '../middleware/validation.middleware';
+import { validateRegistration, validateLogin, validateForgotPassword, validateResetPassword, validateOtp } from '../middleware/validation.middleware';
 
 const router = Router();
 
@@ -69,6 +69,35 @@ router.post('/register', strictRateLimiter, validateRegistration, AuthController
  *         description: Invalid or expired token
  */
 router.post('/verify-email', strictRateLimiter, AuthController.verifyEmail);
+
+/**
+ * @swagger
+ * /auth/verify-otp:
+ *   post:
+ *     summary: Verify a user's OTP
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - otp
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               otp:
+ *                 type: string
+ *     responses:
+ *       '200':
+ *         description: OTP verified successfully
+ *       '400':
+ *         description: Invalid or expired OTP
+ */
+router.post('/verify-otp', strictRateLimiter, validateOtp, AuthController.verifyOtp);
 
 /**
  * @swagger

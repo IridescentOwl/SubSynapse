@@ -224,7 +224,7 @@ export const login = async (email: string, password: string): Promise<{ token: s
   return { token: data.accessToken, user };
 };
 
-export const register = async (name: string, email: string, password: string): Promise<{ token: string, user: User }> => {
+export const register = async (name: string, email: string, password: string): Promise<{ message: string }> => {
   const response = await apiRequest('/auth/register', {
     method: 'POST',
     body: JSON.stringify({ name, email, password }),
@@ -245,11 +245,24 @@ export const register = async (name: string, email: string, password: string): P
     throw new Error(error.message || 'Registration failed');
   }
 
+  return await response.json();
+};
+
+export const verifyOtp = async (email: string, otp: string): Promise<{ token: string, user: User }> => {
+  const response = await apiRequest('/auth/verify-otp', {
+    method: 'POST',
+    body: JSON.stringify({ email, otp }),
+  });
+
   const data = await response.json();
-  
-  // After registration, user needs to verify email
-  // Throw a special error that the UI can handle
-  throw new Error('REGISTRATION_SUCCESS: Please check your email for verification OTP.');
+  setAuthTokens(data.accessToken, data.refreshToken);
+
+  // Fetch user profile
+  const userResponse = await apiRequest('/users/profile');
+  const userData = await userResponse.json();
+  const user = mapUserToFrontend(userData);
+
+  return { token: data.accessToken, user };
 };
 
 export const verifyEmail = async (token: string): Promise<void> => {

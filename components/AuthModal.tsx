@@ -7,7 +7,7 @@ interface AuthModalProps {
   onClose: () => void;
 }
 
-type AuthView = 'login' | 'register' | 'forgotPassword' | 'forgotPasswordSuccess';
+type AuthView = 'login' | 'register' | 'forgotPassword' | 'forgotPasswordSuccess' | 'otp';
 
 const FormInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label: string }> = ({ label, ...props }) => (
     <div>
@@ -21,10 +21,10 @@ const FormInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label:
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [view, setView] = useState<AuthView>('login');
-  const [formState, setFormState] = useState({ name: '', email: '', password: '' });
+  const [formState, setFormState] = useState({ name: '', email: '', password: '', otp: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login, register, forgotPassword } = useAuth();
+  const { login, register, forgotPassword, verifyOtp } = useAuth();
 
   if (!isOpen) return null;
   
@@ -40,11 +40,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
         if (view === 'login') {
             await login(formState.email, formState.password);
+            onClose();
         } else if (view === 'register') {
             await register(formState.name, formState.email, formState.password);
+            setView('otp');
         } else if (view === 'forgotPassword') {
             await forgotPassword(formState.email);
             setView('forgotPasswordSuccess');
+        } else if (view === 'otp') {
+            await verifyOtp(formState.email, formState.otp);
+            onClose();
         }
     } catch (err: any) {
         setError(err.message || 'An error occurred.');
@@ -56,7 +61,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const handleViewChange = (newView: AuthView) => {
     setView(newView);
     setError(null);
-    setFormState({ name: '', email: '', password: '' });
+    setFormState({ name: '', email: '', password: '', otp: '' });
   }
 
   const renderContent = () => {
@@ -70,6 +75,28 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   </button>
               </div>
           )
+      }
+
+      if (view === 'otp') {
+        return (
+            <div className="text-center">
+                <h2 className="text-2xl font-bold text-white mb-4">Enter OTP</h2>
+                <p className="text-slate-300 mb-6">An OTP has been sent to {formState.email}.</p>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <FormInput label="OTP" name="otp" type="text" placeholder="123456" value={formState.otp} onChange={handleInputChange} required />
+                    {error && <p className="text-sm text-red-400 text-center">{error}</p>}
+                    <div className="pt-2">
+                        <button 
+                            type="submit"
+                            className="w-full font-bold py-3 px-6 rounded-xl transition duration-300 bg-sky-500 hover:bg-sky-400 text-white disabled:bg-sky-500/50"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Verifying...' : 'Verify OTP'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        )
       }
       
       const isLoginView = view === 'login';

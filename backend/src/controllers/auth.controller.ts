@@ -69,17 +69,70 @@ export class AuthController {
 
       await AuditService.log('USER_REGISTER', user.id, JSON.stringify(user), req.ip, 'User');
 
-      // Return success with token in development mode if email failed
-      const responseMessage = process.env.NODE_ENV === 'development' 
-        ? `User registered. Verification token: ${verificationToken} (Check console for details)`
-        : 'User registered. Please check your email for verification OTP.';
+      const responseMessage = 'User registered. Please check your email for verification OTP.';
 
       return res.status(201).json({ 
         message: responseMessage,
-        ...(process.env.NODE_ENV === 'development' && { verificationToken })
       });
     } catch (error) {
       log('error', 'An error occurred during registration', { error });
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  public static async verifyOtp(req: Request, res: Response): Promise<Response> {
+    const { email, otp } = req.body;
+
+    if (!otp || typeof otp !== 'string' || !email) {
+      return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+
+    try {
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const verificationRecord = await prisma.emailVerification.findFirst({
+        where: { 
+          userId: user.id,
+          token: otp 
+        },
+      });
+
+      if (!verificationRecord) {
+        log('error', 'OTP not found in database.', { otp });
+        return res.status(400).json({ message: 'Invalid OTP.' });
+      }
+
+      if (verificationRecord.usedAt) {
+        log('error', 'OTP has already been used.', { record: verificationRecord });
+        return res.status(400).json({ message: 'OTP has already been used.' });
+      }
+
+      const now = new Date();
+      if (verificationRecord.expiresAt <= now) {
+        log('error', 'OTP is expired.', { record: verificationRecord, now });
+        return res.status(400).json({ message: 'OTP is expired.' });
+      }
+
+      await prisma.user.update({
+        where: { id: verificationRecord.userId },
+        data: { emailVerified: true },
+      });
+
+      await prisma.emailVerification.update({
+        where: { id: verificationRecord.id },
+        data: { usedAt: new Date() },
+      });
+
+      const { accessToken, refreshToken } = await AuthService.generateTokens(user, req.ip, req.headers['user-agent']);
+
+      await AuditService.log('EMAIL_VERIFIED', user.id, `User ${email} verified their email`, req.ip, 'User');
+
+      return res.status(200).json({ accessToken, refreshToken });
+    } catch (error) {
+      log('error', 'An error occurred during OTP verification', { error });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }

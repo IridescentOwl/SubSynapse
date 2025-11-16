@@ -9,6 +9,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  verifyOtp: (email: string, otp: string) => Promise<void>;
   logout: () => void;
   addCredits: (amount: number) => Promise<void>;
   joinGroup: (subscription: MySubscription, cost: number) => Promise<void>;
@@ -61,7 +62,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const register = async (name: string, email: string, password: string) => {
-    const { user } = await api.register(name, email, password);
+    await api.register(name, email, password);
+  };
+
+  const verifyOtp = async (email: string, otp: string) => {
+    const { user } = await api.verifyOtp(email, otp);
     setUser(user);
     await syncUserData();
   };
@@ -120,6 +125,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isLoading,
       login,
       register,
+      verifyOtp,
       logout,
       addCredits,
       joinGroup,

@@ -1,7 +1,9 @@
 // Real API service connecting to backend
 import type { User, SubscriptionGroup, MySubscription } from '../types.ts';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
+const API_BASE_URL = import.meta.env.PROD
+  ? import.meta.env.VITE_API_BASE_URL || '/api'
+  : '/api';
 
 // Helper function to get auth token
 const getAuthToken = (): string | null => {

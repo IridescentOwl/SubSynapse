@@ -14,9 +14,7 @@ dist-ssr
 package-lock.json
 backend/package-lock.json
 # Environment variables
-.env.production
-.env.development
-.env.local
+.env
 
 #myfiles 
 roadmap.txt

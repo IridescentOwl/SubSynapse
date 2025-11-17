@@ -15,8 +15,9 @@ class PaymentsService {
     return order;
   }
 
-  static async addCredits(userId: string, amount: number, paymentGatewayId: string) {
-    const user = await prisma.user.update({
+  static async addCredits(userId: string, amount: number, paymentGatewayId: string, tx?: any) {
+    const prismaClient = tx || prisma;
+    const user = await prismaClient.user.update({
       where: { id: userId },
       data: {
         creditBalance: {
@@ -25,7 +26,7 @@ class PaymentsService {
       },
     });
 
-    await prisma.transaction.create({
+    await prismaClient.transaction.create({
       data: {
         userId,
         type: 'credit',

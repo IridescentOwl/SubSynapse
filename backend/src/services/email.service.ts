@@ -123,12 +123,13 @@ export class EmailService {
   }
 
   public static async sendPasswordResetEmail(email: string, token: string): Promise<void> {
-    const env = validateEnvironment();
-    const resetLink = `${env.FRONTEND_URL}/reset-password?token=${token}`;
     const subject = 'Reset your Subsynapse password';
-    const body = `<p>Click <a href="${resetLink}">here</a> to reset your password.</p>`;
+    const template = renderTemplate('password-reset-template', {});
+    const html = template
+      .replace('123456', token)
+      .replace('[User Name]', 'there');
 
-    await this.sendEmail(email, subject, body, true);
+    await this.sendRawEmail(email, subject, html, true);
   }
 
   public static async sendWelcomeEmail(email: string, name: string): Promise<void> {

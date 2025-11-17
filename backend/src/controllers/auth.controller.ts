@@ -251,9 +251,6 @@ export class AuthController {
       const user = await prisma.user.findUnique({ where: { id: resetRecord.userId } });
       if (user) {
         await AuditService.log('PASSWORD_RESET_SUCCESS', user.id, `User ${user.email} successfully reset their password`, req.ip, 'User');
-        if (user.phone) {
-          await (new (require('../services/sms.service')).SmsService()).sendSms(user.phone, 'Your password has been reset successfully.');
-        }
       }
 
       return res.status(200).json({ message: 'Password reset successfully' });

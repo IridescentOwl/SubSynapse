@@ -20,9 +20,6 @@ interface RequiredEnvVars {
 }
 
 interface OptionalEnvVars {
-  TWILIO_ACCOUNT_SID?: string;
-  TWILIO_AUTH_TOKEN?: string;
-  TWILIO_PHONE_NUMBER?: string;
   RAZORPAY_WEBHOOK_SECRET?: string;
   LOW_BALANCE_THRESHOLD?: string;
 }
@@ -61,9 +58,6 @@ export function validateEnvironment(): EnvConfig {
 
   // Check optional variables
   const optionalVars: (keyof OptionalEnvVars)[] = [
-    'TWILIO_ACCOUNT_SID',
-    'TWILIO_AUTH_TOKEN', 
-    'TWILIO_PHONE_NUMBER',
     'RAZORPAY_WEBHOOK_SECRET',
     'LOW_BALANCE_THRESHOLD'
   ];

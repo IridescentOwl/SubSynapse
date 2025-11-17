@@ -23,55 +23,48 @@ export class AuthController {
 
     try {
       const existingUser = await prisma.user.findUnique({ where: { email } });
-      if (existingUser) {
+      if (existingUser && existingUser.emailVerified) {
         return res.status(409).json({ message: 'User already exists' });
       }
 
+      // If a user exists but is not verified, or a pending user exists, delete them to start fresh.
+      if (existingUser && !existingUser.emailVerified) {
+        await prisma.user.delete({ where: { email } });
+      }
+      await prisma.pendingUser.deleteMany({ where: { email } });
+
+
       const hashedPassword = await AuthService.hashPassword(password);
-      const verificationToken = generateOtp();
-      const verificationTokenExpires = new Date(new Date().getTime() + 24 * 60 * 60 * 1000); // 1 day
+      const otp = generateOtp();
+      const expiresAt = new Date(new Date().getTime() + 10 * 60 * 1000); // 10 minutes
 
       const encryptedName = EncryptionService.encrypt(name);
 
-      const user = await prisma.user.create({
+      await prisma.pendingUser.create({
         data: {
           email,
           name: encryptedName,
           password: hashedPassword,
-        },
-      });
-
-      await prisma.emailVerification.create({
-        data: {
-          userId: user.id,
-          token: verificationToken,
-          expiresAt: verificationTokenExpires,
+          otp,
+          expiresAt,
         },
       });
 
       // Send emails (non-blocking - don't fail registration if email fails)
       try {
-        await EmailService.sendWelcomeEmail(email, name);
-      } catch (error) {
-        log('warn', 'Failed to send welcome email, but registration continues', { error });
-      }
-
-      try {
-        await EmailService.sendVerificationEmail(email, verificationToken);
+        await EmailService.sendVerificationEmail(email, otp);
       } catch (error) {
         log('warn', 'Failed to send verification email, but registration continues', { error });
         // In development, log the verification token
         if (process.env.NODE_ENV === 'development') {
-          log('info', `Verification token for ${email}: ${verificationToken}`, {});
-          console.log(`\n📧 Verification token for ${email}: ${verificationToken}\n`);
+          log('info', `Verification OTP for ${email}: ${otp}`, {});
+          console.log(`\n📧 Verification OTP for ${email}: ${otp}\n`);
         }
       }
 
-      await AuditService.log('USER_REGISTER', user.id, JSON.stringify(user), req.ip, 'User');
+      const responseMessage = 'Verification OTP sent. Please check your email.';
 
-      const responseMessage = 'User registered. Please check your email for verification OTP.';
-
-      return res.status(201).json({ 
+      return res.status(201).json({
         message: responseMessage,
       });
     } catch (error) {
@@ -88,96 +81,45 @@ export class AuthController {
     }
 
     try {
-      const user = await prisma.user.findUnique({ where: { email } });
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+      const pendingUser = await prisma.pendingUser.findUnique({ where: { email } });
+      if (!pendingUser) {
+        return res.status(404).json({ message: 'User not found or registration expired.' });
       }
 
-      const verificationRecord = await prisma.emailVerification.findFirst({
-        where: { 
-          userId: user.id,
-          token: otp 
-        },
-      });
-
-      if (!verificationRecord) {
-        log('error', 'OTP not found in database.', { otp });
+      if (pendingUser.otp !== otp) {
         return res.status(400).json({ message: 'Invalid OTP.' });
       }
 
-      if (verificationRecord.usedAt) {
-        log('error', 'OTP has already been used.', { record: verificationRecord });
-        return res.status(400).json({ message: 'OTP has already been used.' });
-      }
-
       const now = new Date();
-      if (verificationRecord.expiresAt <= now) {
-        log('error', 'OTP is expired.', { record: verificationRecord, now });
+      if (pendingUser.expiresAt <= now) {
         return res.status(400).json({ message: 'OTP is expired.' });
       }
 
-      await prisma.user.update({
-        where: { id: verificationRecord.userId },
-        data: { emailVerified: true },
+      const user = await prisma.user.create({
+        data: {
+          email: pendingUser.email,
+          name: pendingUser.name,
+          password: pendingUser.password,
+          emailVerified: true,
+        }
       });
 
-      await prisma.emailVerification.update({
-        where: { id: verificationRecord.id },
-        data: { usedAt: new Date() },
-      });
+      await prisma.pendingUser.delete({ where: { email } });
+      
+      try {
+        await EmailService.sendWelcomeEmail(email, EncryptionService.decrypt(pendingUser.name));
+      } catch (error) {
+        log('warn', 'Failed to send welcome email, but registration continues', { error });
+      }
 
       const { accessToken, refreshToken } = await AuthService.generateTokens(user, req.ip, req.headers['user-agent']);
 
+      await AuditService.log('USER_REGISTER', user.id, JSON.stringify(user), req.ip, 'User');
       await AuditService.log('EMAIL_VERIFIED', user.id, `User ${email} verified their email`, req.ip, 'User');
 
       return res.status(200).json({ accessToken, refreshToken });
     } catch (error) {
       log('error', 'An error occurred during OTP verification', { error });
-      return res.status(500).json({ message: 'Internal server error' });
-    }
-  }
-
-  public static async verifyEmail(req: Request, res: Response): Promise<Response> {
-    const { token } = req.body;
-
-    if (!token || typeof token !== 'string') {
-      return res.status(400).json({ message: 'Verification token is required' });
-    }
-
-    try {
-      const verificationRecord = await prisma.emailVerification.findFirst({
-        where: { token: token },
-      });
-
-      if (!verificationRecord) {
-        log('error', 'Token not found in database.', { token });
-        return res.status(400).json({ message: 'DIAGNOSTIC: Token not found in database.' });
-      }
-
-      if (verificationRecord.usedAt) {
-        log('error', 'Token has already been used.', { record: verificationRecord });
-        return res.status(400).json({ message: 'DIAGNOSTIC: Token has already been used.' });
-      }
-
-      const now = new Date();
-      if (verificationRecord.expiresAt <= now) {
-        log('error', 'Token is expired.', { record: verificationRecord, now });
-        return res.status(400).json({ message: 'DIAGNOSTIC: Token is expired.' });
-      }
-
-      await prisma.user.update({
-        where: { id: verificationRecord.userId },
-        data: { emailVerified: true },
-      });
-
-      await prisma.emailVerification.update({
-        where: { id: verificationRecord.id },
-        data: { usedAt: new Date() },
-      });
-
-      return res.status(200).json({ message: 'Email verified successfully' });
-    } catch (error) {
-      log('error', 'An error occurred during email verification', { error });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }

@@ -39,7 +39,6 @@ model User {
   withdrawalRequests        WithdrawalRequest[]
   reviews                   Review[]
   auditLogs                 AuditLog[]
-  emailVerifications        EmailVerification[]
   passwordResetTokens       PasswordResetToken[]
   activeSessions            ActiveSession[]
   sessions                  Session[]
@@ -156,14 +155,14 @@ model AuditLog {
   admin                     Admin?    @relation(fields: [adminId], references: [id], onDelete: SetNull)
 }
 
-model EmailVerification {
-  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId                    String    @db.ObjectId
-  token                     String    @unique
-  expiresAt                 DateTime
-  usedAt                    DateTime?
-
-  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+model PendingUser {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String   @unique
+  password  String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
 
 model PasswordResetToken {

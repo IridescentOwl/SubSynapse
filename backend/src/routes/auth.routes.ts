@@ -47,31 +47,6 @@ router.post('/register', strictRateLimiter, validateRegistration, AuthController
 
 /**
  * @swagger
- * /auth/verify-email:
- *   post:
- *     summary: Verify a user's email address
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - token
- *             properties:
- *               token:
- *                 type: string
- *     responses:
- *       '200':
- *         description: Email verified successfully
- *       '400':
- *         description: Invalid or expired token
- */
-router.post('/verify-email', strictRateLimiter, AuthController.verifyEmail);
-
-/**
- * @swagger
  * /auth/verify-otp:
  *   post:
  *     summary: Verify a user's OTP

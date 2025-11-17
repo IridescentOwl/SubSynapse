@@ -168,6 +168,7 @@ function App() {
                         onWithdrawCredits={() => setWithdrawModalOpen(true)}
                         onChangePassword={changePassword}
                         onUpdateProfilePicture={updateProfilePicture}
+                        onLogout={handleLogout}
                       /> : null;
       case 'home':
       default:

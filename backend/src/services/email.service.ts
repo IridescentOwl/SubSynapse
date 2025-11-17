@@ -1,4 +1,4 @@
-import sgMail from '@sendgrid/mail';
+import nodemailer from 'nodemailer';
 import { config } from 'dotenv';
 import { renderTemplate } from '../utils/template.util';
 import prisma from '../utils/prisma.singleton';
@@ -9,19 +9,24 @@ config();
 
 const env = validateEnvironment();
 
-// Only set SendGrid API key if it's valid
-if (env.SENDGRID_API_KEY && 
-    env.SENDGRID_API_KEY !== 'SG.placeholder_key' && 
-    !env.SENDGRID_API_KEY.includes('placeholder')) {
-  try {
-    sgMail.setApiKey(env.SENDGRID_API_KEY);
-    console.log('✅ SendGrid API key configured');
-  } catch (error) {
-    console.warn('⚠️  Failed to set SendGrid API key:', error);
+const transporter = nodemailer.createTransport({
+  host: env.SMTP_HOST,
+  port: env.SMTP_PORT,
+  secure: env.SMTP_PORT === 465, // true for 465, false for other ports
+  auth: {
+    user: env.SMTP_USER,
+    pass: env.SMTP_PASS,
+  },
+});
+
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('⚠️  SMTP configuration error:', error);
+  } else {
+    console.log('✅ SMTP server is ready to take our messages');
   }
-} else {
-  console.warn('⚠️  SendGrid API key not configured or is placeholder. Email sending will be disabled.');
-}
+});
+
 
 export class EmailService {
   private static async sendEmail(to: string, subject: string, body: string, essential = false): Promise<void> {
@@ -34,35 +39,22 @@ export class EmailService {
 
     const env = validateEnvironment();
     
-    // Check if SendGrid is properly configured
-    if (!env.SENDGRID_API_KEY || env.SENDGRID_API_KEY === 'SG.placeholder_key' || env.SENDGRID_API_KEY.includes('placeholder')) {
-      console.warn(`⚠️  SendGrid API key not configured. Email not sent to ${to}`);
-      console.warn(`   Subject: ${subject}`);
-      if (env.NODE_ENV === 'development') {
-        console.warn(`   Email body would be: ${body}`);
-      }
-      return; // Don't throw error, just skip email
-    }
-
     const token = jwt.sign({ email: to }, env.JWT_SECRET, { expiresIn: '7d' });
     const unsubscribeLink = `${env.FRONTEND_URL}/unsubscribe?token=${token}`;
     const html = renderTemplate('base', { body, unsubscribeLink });
 
     const msg = {
       to,
-      from: env.EMAIL_FROM,
+      from: env.SMTP_FROM_EMAIL,
       subject,
       html,
     };
 
     try {
-      await sgMail.send(msg);
+      await transporter.sendMail(msg);
       console.log(`✅ Email sent to ${to}`);
     } catch (error: any) {
       console.error('❌ Error sending email:', error.message || error);
-      if (error?.response?.body) {
-        console.error('SendGrid error details:', error.response.body);
-      }
       
       // In development, log the email content instead of failing
       if (env.NODE_ENV === 'development') {
@@ -82,11 +74,9 @@ export class EmailService {
     }
   }
 
-  public static async sendVerificationEmail(email: string, token: string): Promise<void> {
-    const env = validateEnvironment();
-    const verificationLink = `${env.FRONTEND_URL}/verify-email?token=${token}`;
+  public static async sendVerificationEmail(email: string, otp: string): Promise<void> {
     const subject = 'Verify your Subsynapse account';
-    const body = `<p>Click <a href="${verificationLink}">here</a> to verify your account.</p>`;
+    const body = `<p>Your verification OTP is: <strong>${otp}</strong></p>`;
 
     await this.sendEmail(email, subject, body, true);
   }

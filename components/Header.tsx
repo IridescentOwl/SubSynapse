@@ -64,12 +64,7 @@ const Header: React.FC<HeaderProps> = ({ isVisible, page, user, activeDashboardT
                       <span>{user.creditBalance.toLocaleString()} Credits</span>
                     </button>
                     <button onClick={onCreateGroup} className="bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 px-4 rounded-full transition duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex items-center gap-2">
-                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                        </svg>
-                    </button>
-                    <button onClick={onLogout} className="font-semibold text-slate-300 hover:text-white transition">
-                        Logout
+                       <span>Create Group</span>
                     </button>
                 </>
             ) : (

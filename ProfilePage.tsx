@@ -33,6 +33,7 @@ interface ProfilePageProps {
   onWithdrawCredits: () => void;
   onChangePassword: (oldPass: string, newPass: string) => Promise<void>;
   onUpdateProfilePicture: (imageDataUrl: string) => Promise<void>;
+  onLogout: () => void;
 }
 
 const ChangePasswordForm: React.FC<{ onChangePassword: (oldPass: string, newPass: string) => Promise<void> }> = ({ onChangePassword }) => {
@@ -84,7 +85,7 @@ const ChangePasswordForm: React.FC<{ onChangePassword: (oldPass: string, newPass
     );
 };
 
-const ProfilePage: React.FC<ProfilePageProps> = ({ user, onAddCredits, onWithdrawCredits, onChangePassword, onUpdateProfilePicture }) => {
+const ProfilePage: React.FC<ProfilePageProps> = ({ user, onAddCredits, onWithdrawCredits, onChangePassword, onUpdateProfilePicture, onLogout }) => {
     const lifetimeSavings = 4550; // Mock lifetime savings
     const animatedSavings = useCountUp(lifetimeSavings);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -183,6 +184,16 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ user, onAddCredits, onWithdra
                     <h3 className="text-2xl font-bold mb-4 ml-2">Account Settings</h3>
                     <GlassmorphicCard className="overflow-hidden" hasAnimation animationDelay={450}>
                         <ChangePasswordForm onChangePassword={onChangePassword} />
+                    </GlassmorphicCard>
+                    <GlassmorphicCard className="mt-4" hasAnimation animationDelay={600}>
+                        <div className="p-6">
+                            <button 
+                                onClick={onLogout}
+                                className="w-full font-semibold py-3 px-6 rounded-xl transition duration-300 bg-red-500/80 hover:bg-red-500 text-white"
+                            >
+                                Logout
+                            </button>
+                        </div>
                     </GlassmorphicCard>
                 </div>
             </div>

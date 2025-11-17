@@ -38,26 +38,10 @@ const port = envConfig.PORT;
 
 // CORS configuration based on environment
 const corsOptions = {
-  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [envConfig.FRONTEND_URL];
-    
-    // Only add localhost in development
-    if (envConfig.NODE_ENV === 'development') {
-      allowedOrigins.push('http://localhost:3000', 'http://localhost:3001');
-    }
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      log('warn', `CORS blocked origin: ${origin}`, { allowedOrigins });
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: envConfig.NODE_ENV === 'development' 
+    ? /http:\/\/localhost:\d+/ 
+    : envConfig.FRONTEND_URL,
   credentials: true,
-  optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));

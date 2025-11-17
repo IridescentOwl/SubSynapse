@@ -7,8 +7,11 @@ interface RequiredEnvVars {
   ENCRYPTION_KEY: string;
   RAZORPAY_KEY_ID: string;
   RAZORPAY_KEY_SECRET: string;
-  SENDGRID_API_KEY: string;
-  EMAIL_FROM: string;
+  SMTP_HOST: string;
+  SMTP_PORT: number;
+  SMTP_USER: string;
+  SMTP_PASS: string;
+  SMTP_FROM_EMAIL: string;
   ADMIN_EMAIL: string;
   FRONTEND_URL: string;
   PORT?: string;
@@ -34,8 +37,11 @@ export function validateEnvironment(): EnvConfig {
     'ENCRYPTION_KEY',
     'RAZORPAY_KEY_ID',
     'RAZORPAY_KEY_SECRET',
-    'SENDGRID_API_KEY',
-    'EMAIL_FROM',
+    'SMTP_HOST',
+    'SMTP_PORT',
+    'SMTP_USER',
+    'SMTP_PASS',
+    'SMTP_FROM_EMAIL',
     'ADMIN_EMAIL',
     'FRONTEND_URL'
   ];
@@ -126,8 +132,8 @@ function validateSpecificFormats(config: EnvConfig): void {
 
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(config.EMAIL_FROM)) {
-    const error = 'EMAIL_FROM must be a valid email address';
+  if (!emailRegex.test(config.SMTP_FROM_EMAIL)) {
+    const error = 'SMTP_FROM_EMAIL must be a valid email address';
     log('error', error);
     if (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV !== 'testing') {
       process.exit(1);
@@ -145,6 +151,19 @@ function validateSpecificFormats(config: EnvConfig): void {
       throw new Error(error);
     }
   }
+
+  // Validate SMTP_PORT
+  const port = Number(config.SMTP_PORT);
+  if (isNaN(port) || port <= 0) {
+    const error = 'SMTP_PORT must be a positive number';
+    log('error', error);
+    if (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV !== 'testing') {
+        process.exit(1);
+    } else {
+        throw new Error(error);
+    }
+  }
+  config.SMTP_PORT = port;
 
   // Validate URL format
   try {

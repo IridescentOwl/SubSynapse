@@ -74,11 +74,52 @@ export class EmailService {
     }
   }
 
+  private static async sendRawEmail(to: string, subject: string, html: string, essential = false): Promise<void> {
+    const user = await prisma.user.findUnique({ where: { email: to } });
+
+    if (user && !essential && (user.notifications as any)?.email === false) {
+      console.log(`Email to ${to} blocked due to user preferences.`);
+      return;
+    }
+
+    const env = validateEnvironment();
+
+    const msg = {
+      to,
+      from: env.SMTP_FROM_EMAIL,
+      subject,
+      html,
+    };
+
+    try {
+      await transporter.sendMail(msg);
+      console.log(`✅ Email sent to ${to}`);
+    } catch (error: any) {
+      console.error('❌ Error sending email:', error.message || error);
+      
+      if (env.NODE_ENV === 'development') {
+        console.warn(`⚠️  Email sending failed, but continuing. Email would have been:`);
+        console.warn(`   To: ${to}`);
+        console.warn(`   Subject: ${subject}`);
+      }
+      
+      if (essential && env.NODE_ENV === 'production') {
+        throw new Error('Email could not be sent.');
+      }
+      
+      console.warn(`⚠️  Email to ${to} failed, but operation continues`);
+    }
+  }
+
   public static async sendVerificationEmail(email: string, otp: string): Promise<void> {
     const subject = 'Verify your Subsynapse account';
-    const body = `<p>Your verification OTP is: <strong>${otp}</strong></p>`;
+    
+    const template = renderTemplate('otp-template', {});
+    const html = template
+      .replace('123456', otp)
+      .replace('[User Name]', 'there');
 
-    await this.sendEmail(email, subject, body, true);
+    await this.sendRawEmail(email, subject, html, true);
   }
 
   public static async sendPasswordResetEmail(email: string, token: string): Promise<void> {

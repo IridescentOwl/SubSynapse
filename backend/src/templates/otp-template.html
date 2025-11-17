@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Subsynapse</title>
+    
+    <!-- Using Inter font to match subsynapse.me -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* * GLOBAL STYLES
+         * ---
+         * These are mobile-first, fluid, and responsive.
+         * Dark mode theme to match subsynapse.me
+        */
+
+        /* Reset styles */
+        body,
+        table,
+        td,
+        a {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+        table,
+        td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+
+        img {
+            -ms-interpolation-mode: bicubic;
+        }
+
+        /* Core body styles */
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100% !important;
+            font-family: 'Inter', Arial, sans-serif;
+            background-color: #0F0F0F; /* Match website background */
+            color: #E5E7EB; /* --gray-200 */
+        }
+
+        /* Main container table */
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #0F0F0F; /* Match website background */
+            border-radius: 12px;
+            overflow: hidden; /* Ensures rounded corners are respected */
+        }
+
+        /* * MODULE STYLES
+         * ---
+         * Header, Content, Features, CTA, Footer
+        */
+
+        /* Header (Logo) */
+        .header {
+            padding: 40px 30px 30px 30px;
+            text-align: center;
+        }
+
+        .header img {
+            width: 180px;
+            height: auto;
+        }
+
+        /* Main Content */
+        .content {
+            padding: 10px 40px 30px 40px;
+            color: #D1D5DB; /* --gray-300 */
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .content h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #F9FAFB; /* --gray-50 */
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .content p {
+            margin-bottom: 20px;
+        }
+        
+        /* * NEW: VISUAL CARD STYLES (Dark Mode) */
+        .card-container {
+            padding: 0;
+            margin: 0 0 35px 0;
+        }
+
+        .card {
+            width: 100%;
+            background-color: #1C1C1C; /* Dark card background */
+            border-radius: 12px;
+            border: 1px solid #27272A; /* --zinc-800 border */
+        }
+        
+        .card-icon {
+            padding: 20px 0 20px 20px;
+            vertical-align: top;
+            width: 60px; /* Fixed width for the emoji column */
+        }
+
+        .card-emoji {
+            font-size: 28px;
+            line-height: 1;
+        }
+        
+        .card-content {
+            padding: 20px 20px 20px 16px;
+            vertical-align: top;
+        }
+
+        .card-content h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #F9FAFB; /* --gray-50 */
+            margin-top: 0;
+            margin-bottom: 4px;
+        }
+
+        .card-content p {
+            font-size: 15px;
+            color: #9CA3AF; /* --gray-400 */
+            margin-bottom: 0;
+            line-height: 1.5;
+        }
+        /* * END: NEW CARD STYLES */
+
+        /* Footer */
+        .footer-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 30px 40px;
+            text-align: center;
+            color: #6B7280; /* --gray-500 */
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .footer-links a {
+            color: #6B7280;
+            text-decoration: underline;
+            padding: 0 5px;
+        }
+
+    </style>
+</head>
+
+<body style="margin: 0; padding: 0; width: 100% !important; font-family: 'Inter', Arial, sans-serif; background-color: #0F0F0F; color: #E5E7EB;">
+    
+    <!-- Preview Text -->
+    <span style="display:none; font-size:1px; color:#0F0F0F; line-height:1px; max-height:0px; max-width:0px; opacity:0; overflow:hidden;">
+        Here's your one-time password! Welcome to Subsynapse.
+    </span>
+
+    <center style="width: 100%; background-color: #0F0F0F; padding: 20px 0;">
+        
+        <!-- Main Email Container -->
+        <table class="container" role="presentation" border="0" cellpadding="0" cellspacing="0" style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #0F0F0F; border-radius: 12px; overflow: hidden;">
+            
+            <!-- Header (Logo) -->
+            <tr>
+                <td class="header" style="padding: 40px 30px 30px 30px; text-align: center;">
+                    <!-- Placeholder for your logo. The purple text matches your site's accent. -->
+                    <img src="https://placehold.co/360x72/0F0F0F/A855F7?text=Subsynapse&font=inter" alt="Subsynapse Logo">
+                </td>
+            </tr>
+
+            <!-- Main Content -->
+            <tr>
+                <td class="content" style="padding: 10px 40px 30px 40px; color: #D1D5DB; line-height: 1.6; font-size: 16px;">
+                    <h1 style="font-size: 26px; font-weight: 700; color: #F9FAFB; margin-top: 0; margin-bottom: 20px;">Welcome to Subsynapse!</h1>
+                    
+                    <p style="margin-bottom: 20px;">Hi [User Name],</p>
+                    <p style="margin-bottom: 35px;">
+                        We're thrilled to have you. Here's a quick look at how you can use the platform.
+                    </p>
+
+                    <!-- Feature Cards Table -->
+                    <table class="card-container" role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding: 0; margin: 0 0 35px 0;">
+
+                        <!-- Card 1: Share & Save -->
+                        <tr>
+                            <td style="padding-bottom: 16px;">
+                                <table class="card" role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width: 100%; background-color: #1C1C1C; border-radius: 12px; border: 1px solid #27272A;">
+                                    <tr>
+                                        <td class="card-icon" style="padding: 20px 0 20px 20px; vertical-align: top; width: 60px;">
+                                            <!-- Emoji 1: Piggy Bank -->
+                                            <span class="card-emoji" style="font-size: 28px; line-height: 1;">💰</span>
+                                        </td>
+                                        <td class="card-content" style="padding: 20px 20px 20px 16px; vertical-align: top;">
+                                            <h3 style="font-size: 18px; font-weight: 600; color: #F9FAFB; margin-top: 0; margin-bottom: 4px;">Share & Save</h3>
+                                            <p style="font-size: 15px; color: #9CA3AF; margin-bottom: 0; line-height: 1.5;">Instantly join or share subscriptions. Stop paying full price for services you barely use.</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <!-- Card 2: Total Flexibility -->
+                        <tr>
+                            <td style="padding-bottom: 16px;">
+                                <table class="card" role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width: 100%; background-color: #1C1C1C; border-radius: 12px; border: 1px solid #27272A;">
+                                    <tr>
+                                        <td class="card-icon" style="padding: 20px 0 20px 20px; vertical-align: top; width: 60px;">
+                                            <!-- Emoji 2: Calendar -->
+                                            <span class="card-emoji" style="font-size: 28px; line-height: 1;">📅</span>
+                                        </td>
+                                        <td class="card-content" style="padding: 20px 20px 20px 16px; vertical-align: top;">
+                                            <h3 style="font-size: 18px; font-weight: 600; color: #F9FAFB; margin-top: 0; margin-bottom: 4px;">Total Flexibility</h3>
+                                            <p style="font-size: 15px; color: #9CA3AF; margin-bottom: 0; line-height: 1.5;">Join for as little as <strong>one day</strong>. Perfect for binging a series or finishing a project.</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        
+                        <!-- Card 3: Safe & Secure -->
+                        <tr>
+                            <td style="padding-bottom: 35px;">
+                                <table class="card" role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width: 100%; background-color: #1C1C1C; border-radius: 12px; border: 1px solid #27272A;">
+                                    <tr>
+                                        <td class="card-icon" style="padding: 20px 0 20px 20px; vertical-align: top; width: 60px;">
+                                            <!-- Emoji 3: Shield -->
+                                            <span class="card-emoji" style="font-size: 28px; line-height: 1;">🛡️</span>
+                                        </td>
+                                        <td class="card-content" style="padding: 20px 20px 20px 16px; vertical-align: top;">
+                                            <h3 style="font-size: 18px; font-weight: 600; color: #F9FAFB; margin-top: 0; margin-bottom: 4px;">Safe & Secure</h3>
+                                            <p style="font-size: 15px; color: #9CA3AF; margin-bottom: 0; line-height: 1.5;">We manage all payments and credentials, so you never share personal passwords.</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                    </table>
+                    
+                    <!-- OTP Block -->
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: separate; border-spacing: 0;">
+                        <tr>
+                            <td style="background-color: #1C1C1C; border: 1px solid #27272A; border-radius: 12px; padding: 25px 30px; text-align: center;">
+                                <h2 style="font-size: 20px; font-weight: 600; color: #F9FAFB; margin-top: 0; margin-bottom: 15px;">
+                                    Your One-Time Password
+                                </h2>
+                                <p style="font-size: 16px; color: #D1D5DB; margin-top: 0; margin-bottom: 20px;">
+                                    Use this code to complete your sign-up:
+                                </p>
+                                
+                                <!-- The OTP Code -->
+                                <div style="font-size: 36px; font-weight: 700; color: #A855F7; letter-spacing: 8px; margin-bottom: 15px; user-select: all;">
+                                    123456
+                                </div>
+                                <p style="font-size: 13px; color: #6B7280; margin-bottom: 0px; margin-top: 15px;">
+                                    This code will expire in 10 minutes.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                </td>
+            </tr>
+
+            <!-- Empty row for spacing -->
+            <tr>
+                <td style="padding: 10px 40px 50px 40px; text-align: center;">
+                    <!-- Intentionally empty for padding -->
+                </td>
+            </tr>
+
+        </table>
+        
+        <!-- Footer -->
+        <div class="footer-container" style="width: 100%; max-width: 600px; margin: 0 auto; padding: 30px 40px; text-align: center; color: #6B7280; font-size: 13px; line-height: 1.5;">
+            <p style="margin-top: 15px;">&copy; 2025 Subsynapse. All rights reserved.</p>
+            <p>
+                <a href="https://your-app-url.com/unsubscribe" target="_blank" style="color: #6B7280; text-decoration: underline;">
+                    Unsubscribe
+                </a>
+            </p>
+        </div>
+
+    </center>
+</body>
+</html>

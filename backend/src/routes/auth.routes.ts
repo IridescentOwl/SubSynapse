@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller';
 import { strictRateLimiter } from '../middleware/rateLimiter.middleware';
 import { validateRegistration, validateLogin, validateForgotPassword, validateResetPassword, validateOtp } from '../middleware/validation.middleware';
+import { authenticateResetToken } from '../middleware/resetPassword.middleware';
 
 const router = Router();
 
@@ -12,11 +13,21 @@ const router = Router();
  *   description: User authentication and authorization
  */
 
+// Registration
+router.post('/register', strictRateLimiter, validateRegistration, AuthController.register);
+router.post('/verify-otp', strictRateLimiter, validateOtp, AuthController.verifyOtp);
+
+// Login & Logout
+router.post('/login', strictRateLimiter, validateLogin, AuthController.login);
+router.post('/logout', AuthController.logout);
+router.post('/refresh-token', AuthController.refreshToken);
+
+// Password Reset Flow
 /**
  * @swagger
- * /auth/register:
+ * /auth/forgot-password:
  *   post:
- *     summary: Register a new user
+ *     summary: Request a password reset OTP
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -25,31 +36,24 @@ const router = Router();
  *           schema:
  *             type: object
  *             required:
- *               - name
  *               - email
- *               - password
  *             properties:
- *               name:
- *                 type: string
  *               email:
  *                 type: string
  *                 format: email
- *               password:
- *                 type: string
- *                 format: password
  *     responses:
- *       '201':
- *         description: User registered successfully
- *       '400':
- *         description: Invalid input
+ *       '200':
+ *         description: Password reset OTP sent
+ *       '404':
+ *         description: User not found
  */
-router.post('/register', strictRateLimiter, validateRegistration, AuthController.register);
+router.post('/forgot-password', strictRateLimiter, validateForgotPassword, AuthController.forgotPassword);
 
 /**
  * @swagger
- * /auth/verify-otp:
+ * /auth/verify-password-otp:
  *   post:
- *     summary: Verify a user's OTP
+ *     summary: Verify a password reset OTP
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -68,109 +72,27 @@ router.post('/register', strictRateLimiter, validateRegistration, AuthController
  *                 type: string
  *     responses:
  *       '200':
- *         description: OTP verified successfully
- *       '400':
- *         description: Invalid or expired OTP
- */
-router.post('/verify-otp', strictRateLimiter, validateOtp, AuthController.verifyOtp);
-
-/**
- * @swagger
- * /auth/login:
- *   post:
- *     summary: Log in a user
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *               - password
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *               password:
- *                 type: string
- *                 format: password
- *     responses:
- *       '200':
- *         description: User logged in successfully
+ *         description: OTP verified, returns a short-lived reset token.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 accessToken:
+ *                 resetToken:
  *                   type: string
- *                 refreshToken:
- *                   type: string
- *       '401':
- *         description: Invalid credentials
- */
-router.post('/login', strictRateLimiter, validateLogin, AuthController.login);
-
-/**
- * @swagger
- * /auth/forgot-password:
- *   post:
- *     summary: Request a password reset
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *     responses:
- *       '200':
- *         description: Password reset email sent
- *       '404':
- *         description: User not found
- */
-router.post('/forgot-password', strictRateLimiter, validateForgotPassword, AuthController.forgotPassword);
-
-/**
- * @swagger
- * /auth/reset-password/{token}:
- *   get:
- *     summary: Validate a password reset token
- *     tags: [Authentication]
- *     parameters:
- *       - in: path
- *         name: token
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       '200':
- *         description: Token is valid
  *       '400':
- *         description: Invalid or expired token
+ *         description: Invalid or expired OTP
  */
-router.get('/reset-password/:token', strictRateLimiter, AuthController.validateResetToken);
+router.post('/verify-password-otp', strictRateLimiter, validateOtp, AuthController.verifyPasswordOtp);
 
 /**
  * @swagger
- * /auth/reset-password/{token}:
+ * /auth/reset-password:
  *   post:
- *     summary: Reset a user's password
+ *     summary: Reset a user's password using a reset token
  *     tags: [Authentication]
- *     parameters:
- *       - in: path
- *         name: token
- *         required: true
- *         schema:
- *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -186,82 +108,10 @@ router.get('/reset-password/:token', strictRateLimiter, AuthController.validateR
  *     responses:
  *       '200':
  *         description: Password reset successfully
- *       '400':
- *         description: Invalid or expired token
- */
-router.post('/reset-password/:token', strictRateLimiter, validateResetPassword, AuthController.resetPassword);
-
-/**
- * @swagger
- * /auth/logout:
- *   post:
- *     summary: Log out a user
- *     tags: [Authentication]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       '200':
- *         description: User logged out successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Logged out successfully
  *       '401':
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Unauthorized
+ *         description: Invalid or expired reset token
  */
-router.post('/logout', AuthController.logout);
+router.post('/reset-password', strictRateLimiter, authenticateResetToken, validateResetPassword, AuthController.resetPassword);
 
-/**
- * @swagger
- * /auth/refresh-token:
- *   post:
- *     summary: Refresh an access token
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - refreshToken
- *             properties:
- *               refreshToken:
- *                 type: string
- *     responses:
- *       '200':
- *         description: Access token refreshed successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 accessToken:
- *                   type: string
- *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
- *       '401':
- *         description: Invalid refresh token
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Invalid refresh token
- */
-router.post('/refresh-token', AuthController.refreshToken);
 
 export default router;

@@ -3,9 +3,10 @@ import { AuthService } from '../services/auth.service';
 import { EmailService } from '../services/email.service';
 import { EncryptionService } from '../services/encryption.service';
 import { AuditService } from '../services/audit.service';
-import { generateOtp, generateSecureToken } from '../utils/crypto.util';
+import { generateOtp } from '../utils/crypto.util';
 import { log } from '../utils/logging.util';
 import prisma from '../utils/prisma.singleton';
+import jwt from 'jsonwebtoken';
 
 export class AuthController {
   public static async register(req: Request, res: Response): Promise<Response> {
@@ -112,7 +113,7 @@ export class AuthController {
         log('warn', 'Failed to send welcome email, but registration continues', { error });
       }
 
-      const { accessToken, refreshToken } = await AuthService.generateTokens(user, req.ip, req.headers['user-agent']);
+      const {accessToken, refreshToken} = await AuthService.generateTokens(user, req.ip, req.headers['user-agent']);
 
       await AuditService.log('USER_REGISTER', user.id, JSON.stringify(user), req.ip, 'User');
       await AuditService.log('EMAIL_VERIFIED', user.id, `User ${email} verified their email`, req.ip, 'User');
@@ -168,11 +169,11 @@ export class AuthController {
         data: { failedLoginAttempts: 0, lockoutUntil: null },
       });
 
-      const { accessToken, refreshToken } = await AuthService.generateTokens(user, req.ip, req.headers['user-agent']);
+      const {accessToken, refreshToken} = await AuthService.generateTokens(user, req.ip, req.headers['user-agent']);
 
       await AuditService.log('LOGIN_SUCCESS', user.id, `User ${email} logged in successfully`, req.ip, 'User');
 
-      return res.status(200).json({ accessToken, refreshToken });
+      return res.status(200).json({accessToken, refreshToken });
     } catch (error) {
       log('error', 'An error occurred during login', { error });
       return res.status(500).json({ message: 'Internal server error' });
@@ -190,51 +191,86 @@ export class AuthController {
       const user = await prisma.user.findUnique({ where: { email } });
 
       if (user) {
-        const passwordResetToken = generateSecureToken();
-        const passwordResetTokenExpires = new Date(new Date().getTime() + 24 * 60 * 60 * 1000); // 1 day
+        const otp = generateOtp();
+        const expiresAt = new Date(new Date().getTime() + 10 * 60 * 1000); // 10 minutes
 
-        await prisma.passwordResetToken.create({
-          data: {
-            userId: user.id,
-            token: passwordResetToken,
-            expiresAt: passwordResetTokenExpires,
-          },
+        // Use upsert to create or update a password reset token
+        await prisma.passwordResetToken.upsert({
+            where: { userId: user.id },
+            update: { token: otp, expiresAt: expiresAt, usedAt: null },
+            create: {
+              userId: user.id,
+              token: otp,
+              expiresAt: expiresAt,
+            },
         });
 
-        await EmailService.sendPasswordResetEmail(email, passwordResetToken);
+        // Send OTP via email
+        await EmailService.sendPasswordResetEmail(email, otp);
 
-        await AuditService.log('PASSWORD_RESET_REQUEST', user.id, `User ${email} requested a password reset`, req.ip, 'User');
+        await AuditService.log('PASSWORD_RESET_REQUEST', user.id, `User ${email} requested a password reset OTP`, req.ip, 'User');
       }
 
       // Always return a success message to prevent email enumeration
-      return res.status(200).json({ message: 'If a user with that email exists, a password reset link has been sent.' });
+      return res.status(200).json({ message: 'If a user with that email exists, a password reset OTP has been sent.' });
     } catch (error) {
       log('error', 'An error occurred during forgot password', { error });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
 
-  public static async resetPassword(req: Request, res: Response): Promise<Response> {
-    const { token } = req.params;
-    const { password } = req.body;
+  public static async verifyPasswordOtp(req: Request, res: Response): Promise<Response> {
+    const { email, otp } = req.body;
 
     try {
-      const resetRecord = await prisma.passwordResetToken.findFirst({
-        where: {
-          token: token,
-          expiresAt: { gt: new Date() },
-          usedAt: null,
-        },
-      });
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid OTP or email.' });
+        }
 
-      if (!resetRecord) {
-        return res.status(400).json({ message: 'Invalid or expired password reset token' });
-      }
+        const resetRecord = await prisma.passwordResetToken.findFirst({
+            where: {
+                userId: user.id,
+                token: otp,
+                expiresAt: { gt: new Date() },
+                usedAt: null,
+            },
+        });
 
+        if (!resetRecord) {
+            return res.status(400).json({ message: 'Invalid or expired OTP.' });
+        }
+
+        // Mark OTP as used so it can't be used again to get a reset token
+        await prisma.passwordResetToken.update({
+            where: { id: resetRecord.id },
+            data: { usedAt: new Date() },
+        });
+
+        // Generate a short-lived JWT that grants permission to reset the password
+        const resetToken = jwt.sign(
+            { userId: user.id, purpose: 'password-reset' },
+            process.env.JWT_SECRET!,
+            { expiresIn: '10m' }
+        );
+
+        return res.status(200).json({ resetToken });
+
+    } catch (error) {
+        log('error', 'An error occurred during password OTP verification', { error });
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  public static async resetPassword(req: Request, res: Response): Promise<Response> {
+    const { password } = req.body;
+    const { userId } = (req as any).user; // Injected by auth middleware
+
+    try {
       const hashedPassword = await AuthService.hashPassword(password);
 
       await prisma.user.update({
-        where: { id: resetRecord.userId },
+        where: { id: userId },
         data: {
           password: hashedPassword,
           failedLoginAttempts: 0,
@@ -242,13 +278,7 @@ export class AuthController {
         },
       });
 
-      await prisma.passwordResetToken.update({
-        where: { id: resetRecord.id },
-        data: { usedAt: new Date() },
-      });
-
-      // Fetch user for audit logging
-      const user = await prisma.user.findUnique({ where: { id: resetRecord.userId } });
+      const user = await prisma.user.findUnique({ where: { id: userId } });
       if (user) {
         await AuditService.log('PASSWORD_RESET_SUCCESS', user.id, `User ${user.email} successfully reset their password`, req.ip, 'User');
       }
@@ -256,29 +286,6 @@ export class AuthController {
       return res.status(200).json({ message: 'Password reset successfully' });
     } catch (error) {
       log('error', 'An error occurred during password reset', { error });
-      return res.status(500).json({ message: 'Internal server error' });
-    }
-  }
-
-  public static async validateResetToken(req: Request, res: Response): Promise<Response> {
-    const { token } = req.params;
-
-    try {
-      const resetRecord = await prisma.passwordResetToken.findFirst({
-        where: {
-          token: token,
-          expiresAt: { gt: new Date() },
-          usedAt: null,
-        },
-      });
-
-      if (!resetRecord) {
-        return res.status(400).json({ message: 'Invalid or expired password reset token' });
-      }
-
-      return res.status(200).json({ message: 'Token is valid' });
-    } catch (error) {
-      log('error', 'An error occurred during token validation', { error });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
@@ -319,12 +326,13 @@ export class AuthController {
         return res.status(401).json({ message: 'User not found' });
       }
 
-      const { accessToken } = await AuthService.generateTokens(user, req.ip, req.headers['user-agent']);
+      const {accessToken} = await AuthService.generateTokens(user, req.ip, req.headers['user-agent']);
 
-      return res.status(200).json({ accessToken });
+      return res.status(200).json({accessToken});
     } catch (error) {
       log('error', 'An error occurred during token refresh', { error });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
 }
+

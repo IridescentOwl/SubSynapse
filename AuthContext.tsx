@@ -18,7 +18,8 @@ interface AuthContextType {
   requestWithdrawal: (amount: number, upiId: string) => Promise<void>;
   syncUserData: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
-  changePassword: (oldPass: string, newPass: string) => Promise<void>;
+  verifyPasswordOtp: (email: string, otp: string) => Promise<{ resetToken: string }>;
+  resetPassword: (resetToken: string, newPassword: string) => Promise<void>;
   updateProfilePicture: (imageDataUrl: string) => Promise<void>;
 }
 
@@ -107,8 +108,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await api.forgotPassword(email);
   };
   
-  const changePassword = async (oldPass: string, newPass: string) => {
-    await api.changePassword(oldPass, newPass);
+  const verifyPasswordOtp = async (email: string, otp: string) => {
+    return await api.verifyPasswordOtp(email, otp);
+  };
+
+  const resetPassword = async (resetToken: string, newPassword: string) => {
+    await api.resetPassword(resetToken, newPassword);
   };
 
   const updateProfilePicture = async (imageDataUrl: string) => {
@@ -134,7 +139,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       requestWithdrawal,
       syncUserData,
       forgotPassword,
-      changePassword,
+      verifyPasswordOtp,
+      resetPassword,
       updateProfilePicture
     }}>
       {children}

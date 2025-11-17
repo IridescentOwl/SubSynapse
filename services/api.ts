@@ -439,10 +439,22 @@ export const forgotPassword = async (email: string): Promise<void> => {
   });
 };
 
-export const changePassword = async (oldPass: string, newPass: string): Promise<void> => {
-  // First, we need to get the reset token or use a different endpoint
-  // For now, this might need to be implemented differently
-  throw new Error('Password change not yet implemented. Please use forgot password.');
+export const verifyPasswordOtp = async (email: string, otp: string): Promise<{ resetToken: string }> => {
+    const response = await apiRequest('/auth/verify-password-otp', {
+        method: 'POST',
+        body: JSON.stringify({ email, otp }),
+    });
+    return await response.json();
+};
+
+export const resetPassword = async (resetToken: string, newPassword: string): Promise<void> => {
+    await apiRequest('/auth/reset-password', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${resetToken}`,
+        },
+        body: JSON.stringify({ password: newPassword }),
+    });
 };
 
 export const updateProfilePicture = async (imageDataUrl: string): Promise<void> => {

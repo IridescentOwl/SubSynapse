@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import GlassmorphicCard from './GlassmorphicCard.tsx';
 import { useAuth } from '../AuthContext.tsx';
 
@@ -9,13 +9,31 @@ interface AuthModalProps {
 
 type AuthView = 'login' | 'register' | 'forgotPassword' | 'forgotPasswordSuccess' | 'otp';
 
-const FormInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label: string }> = ({ label, ...props }) => (
-    <div>
+const EyeIcon: React.FC<{ show: boolean }> = ({ show }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        {show ? (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        ) : (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M3 3l18 18" />
+        )}
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+);
+
+
+const FormInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label: string; onToggleVisibility?: () => void; showPassword?: boolean }> = ({ label, type, onToggleVisibility, showPassword, ...props }) => (
+    <div className="relative">
         <label className="block text-sm font-medium text-slate-300 mb-1">{label}</label>
         <input 
             {...props}
+            type={type}
             className="w-full px-4 py-2 bg-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 text-white placeholder-gray-400 transition"
         />
+        {type === 'password' && onToggleVisibility && (
+            <button type="button" onClick={onToggleVisibility} className="absolute inset-y-0 right-0 top-6 flex items-center px-3 text-slate-400 hover:text-white">
+                <EyeIcon show={showPassword || false} />
+            </button>
+        )}
     </div>
 );
 
@@ -25,6 +43,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { login, register, forgotPassword, verifyOtp } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState(0);
+
+  useEffect(() => {
+    if (view === 'otp') {
+      setResendCountdown(10);
+    }
+  }, [view]);
+
+  useEffect(() => {
+    if (resendCountdown > 0) {
+      const timer = setTimeout(() => setResendCountdown(resendCountdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCountdown]);
 
   if (!isOpen) return null;
   
@@ -32,6 +65,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       const { name, value } = e.target;
       setFormState(prev => ({...prev, [name]: value}));
   };
+
+  const handleResendOtp = async () => {
+    if (resendCountdown > 0) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+        // We need the user's credentials to re-trigger registration
+        await register(formState.name, formState.email, formState.password);
+        setResendCountdown(10); // Restart countdown
+    } catch (err: any) {
+        setError(err.message || 'Failed to resend OTP.');
+    } finally {
+        setIsLoading(false);
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +109,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const handleViewChange = (newView: AuthView) => {
     setView(newView);
     setError(null);
-    setFormState({ name: '', email: '', password: '', otp: '' });
+    // Persist email and password when switching between login/register
+    setFormState(prev => ({ name: '', otp: '', email: prev.email, password: prev.password }));
   }
 
   const renderContent = () => {
@@ -85,6 +134,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <FormInput label="OTP" name="otp" type="text" placeholder="123456" value={formState.otp} onChange={handleInputChange} required />
                     {error && <p className="text-sm text-red-400 text-center">{error}</p>}
+                    <div className="text-sm text-slate-400">
+                        Didn't receive the code?{' '}
+                        <button 
+                            type="button"
+                            onClick={handleResendOtp}
+                            disabled={resendCountdown > 0}
+                            className="font-semibold text-sky-300 hover:text-sky-200 disabled:text-slate-500 disabled:cursor-not-allowed"
+                        >
+                            Resend OTP {resendCountdown > 0 ? `(${resendCountdown}s)` : ''}
+                        </button>
+                    </div>
                     <div className="pt-2">
                         <button 
                             type="submit"
@@ -119,7 +179,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 )}
 
                 {(isLoginView || isRegisterView) && (
-                    <FormInput label="Password" name="password" type="password" placeholder="••••••••••••" value={formState.password} onChange={handleInputChange} required />
+                    <FormInput 
+                        label="Password" 
+                        name="password" 
+                        type={showPassword ? 'text' : 'password'} 
+                        placeholder="••••••••••••" 
+                        value={formState.password} 
+                        onChange={handleInputChange} 
+                        onToggleVisibility={() => setShowPassword(!showPassword)}
+                        showPassword={showPassword}
+                        required 
+                    />
                 )}
 
                 {error && <p className="text-sm text-red-400 text-center">{error}</p>}

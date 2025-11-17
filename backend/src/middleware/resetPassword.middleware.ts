@@ -1,8 +1,9 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthenticatedRequest } from '../types/express';
+import prisma from '../utils/prisma.singleton';
 
-export const authenticateResetToken = (req: AuthenticatedRequest, res: Response, next: NextFunction): Response | void => {
+export const authenticateResetToken = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -18,7 +19,13 @@ export const authenticateResetToken = (req: AuthenticatedRequest, res: Response,
       return res.status(401).json({ message: 'Invalid token purpose.' });
     }
 
-    req.user = { id: decoded.userId }; // Attach user ID for the controller
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+
+    if (!user) {
+        return res.status(401).json({ message: 'User not found.' });
+    }
+
+    req.user = { id: user.id, email: user.email, userId: user.id };
     next();
   } catch (error) {
     return res.status(401).json({ message: 'Invalid or expired password reset token.' });

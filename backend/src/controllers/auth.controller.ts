@@ -194,11 +194,9 @@ export class AuthController {
         const otp = generateOtp();
         const expiresAt = new Date(new Date().getTime() + 10 * 60 * 1000); // 10 minutes
 
-        // Use upsert to create or update a password reset token
-        await prisma.passwordResetToken.upsert({
-            where: { userId: user.id },
-            update: { token: otp, expiresAt: expiresAt, usedAt: null },
-            create: {
+        // Create a new password reset token
+        await prisma.passwordResetToken.create({
+            data: {
               userId: user.id,
               token: otp,
               expiresAt: expiresAt,

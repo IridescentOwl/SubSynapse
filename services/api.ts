@@ -2,7 +2,7 @@
 import type { User, SubscriptionGroup, MySubscription } from '../types.ts';
 
 const API_BASE_URL = import.meta.env.PROD
-  ? import.meta.env.VITE_API_BASE_URL || '/api'
+  ? (import.meta.env.VITE_API_BASE_URL || 'https://subsynapse.onrender.com/api').replace(/"/g, '')
   : '/api';
 
 // Helper function to get auth token

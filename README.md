@@ -11,8 +11,8 @@ This guide provides the minimal steps to run the project using Docker after clon
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/your-username/subsynapse-subscription-sharing.git](https://github.com/your-username/subsynapse-subscription-sharing.git)
-    cd subsynapse-subscription-sharing
+    git clone [https://github.com/your-username/SubSynapse.git ](https://github.com/your-username/SubSynapse.git )
+    cd SubSynapse
     ```
 
 2.  **Build the Docker image:**

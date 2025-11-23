@@ -1,4 +1,4 @@
-# Subsynapse - Subscription Sharing
+# SubSynapse - Subscription Sharing
 
 This guide provides the minimal steps to run the project using Docker after cloning the repository.
 
@@ -11,19 +11,19 @@ This guide provides the minimal steps to run the project using Docker after clon
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/your-username/subsynapse-subscription-sharing.git](https://github.com/your-username/subsynapse-subscription-sharing.git)
-    cd subsynapse-subscription-sharing
+    git clone [https://github.com/your-username/SubSynapse.git](https://github.com/your-username/SubSynapse.git)
+    cd SubSynapse
     ```
 
 2.  **Build the Docker image:**
     ```bash
-    docker build -t subsynapse-dev .
+    docker build -t SubSynapse-dev .
     ```
 
 3.  **Run the container:**
     This command maps your local `src` folder for live-reloading.
     ```bash
-    docker run -p 3000:3000 -v ./src:/app/src subsynapse-dev
+    docker run -p 3000:3000 -v ./src:/app/src SubSynapse-dev
     ```
 
 ## Accessing the Application

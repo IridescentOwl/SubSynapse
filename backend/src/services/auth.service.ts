@@ -23,8 +23,8 @@ export class AuthService {
     ipAddress?: string,
     userAgent?: string
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const accessToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '15m' });
-    const refreshToken = jwt.sign({ userId: user.id }, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+    const accessToken = jwt.sign({ userId: user.id, isAdmin: user.isAdmin }, JWT_SECRET, { expiresIn: '15m' });
+    const refreshToken = jwt.sign({ userId: user.id, isAdmin: user.isAdmin }, JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days

@@ -20,6 +20,7 @@ model User {
   creditBalance             Float     @default(0)
   emailVerified             Boolean   @default(false)
   isActive                  Boolean   @default(true)
+  isAdmin                   Boolean   @default(false)
   createdAt                 DateTime  @default(now())
   lastLogin                 DateTime?
 
@@ -54,6 +55,7 @@ model SubscriptionGroup {
   slotsTotal                Int
   slotsFilled               Int
   isActive                  Boolean   @default(true)
+  status                    String    @default("pending_review") // active, pending_review, rejected, full
   proofDocument             String?
   adminApproved             Boolean   @default(false)
   createdAt                 DateTime  @default(now())

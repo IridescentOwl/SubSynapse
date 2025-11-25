@@ -4,19 +4,8 @@ import { SubscriptionGroupService } from '../services/subscriptionGroup.service'
 import { log } from '../utils/logging.util';
 
 export class AdminController {
-  static async login(req: Request, res: Response) {
-    const { email, password } = req.body;
-    try {
-      const result = await AdminService.login(email, password);
-      if (result) {
-        res.status(200).json(result);
-      } else {
-        res.status(401).json({ message: 'Invalid credentials' });
-      }
-    } catch (error) {
-      res.status(500).json({ message: 'Error logging in', error });
-    }
-  }
+  // Login is now handled by AuthController
+  // static async login(req: Request, res: Response) { ... }
 
   static async getDashboardStats(req: Request, res: Response) {
     try {
@@ -30,48 +19,65 @@ export class AdminController {
   static async getPendingGroups(req: Request, res: Response) {
     try {
       const groups = await AdminService.getPendingGroups();
-      res.status(200).json(groups);
-    } catch (error) {
-      res.status(500).json({ message: 'Error fetching pending groups', error });
+      res.json(groups);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+
+  static async getActiveGroups(req: Request, res: Response) {
+    try {
+      const groups = await AdminService.getActiveGroups();
+      res.json(groups);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
     }
   }
 
   static async approveGroup(req: Request, res: Response) {
     try {
-      const { id } = req.params;
-      await AdminService.approveGroup(id);
-      res.status(200).json({ message: 'Group approved successfully' });
-    } catch (error) {
-      res.status(500).json({ message: 'Error approving group', error });
+      await AdminService.approveGroup(req.params.id);
+      res.json({ message: 'Group approved successfully' });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
     }
   }
 
   static async rejectGroup(req: Request, res: Response) {
     try {
-      const { id } = req.params;
-      await AdminService.rejectGroup(id);
-      res.status(200).json({ message: 'Group rejected successfully' });
-    } catch (error) {
-      res.status(500).json({ message: 'Error rejecting group', error });
+      await AdminService.rejectGroup(req.params.id);
+      res.json({ message: 'Group rejected successfully' });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
     }
   }
+
+
 
   static async getUsers(req: Request, res: Response) {
     try {
       const users = await AdminService.getUsers();
-      res.status(200).json(users);
-    } catch (error) {
-      res.status(500).json({ message: 'Error fetching users', error });
+      res.json(users);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+
+  static async getUserDetails(req: Request, res: Response) {
+    try {
+      const user = await AdminService.getUserDetails(req.params.id);
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
     }
   }
 
   static async suspendUser(req: Request, res: Response) {
     try {
-      const { id } = req.params;
-      await AdminService.suspendUser(id);
-      res.status(200).json({ message: 'User suspended successfully' });
-    } catch (error) {
-      res.status(500).json({ message: 'Error suspending user', error });
+      await AdminService.suspendUser(req.params.id);
+      res.json({ message: 'User status updated successfully' });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
     }
   }
 

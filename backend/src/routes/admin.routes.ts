@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AdminController } from '../controllers/admin.controller';
 import { adminMiddleware } from '../middleware/admin.middleware';
-import { apiKeyMiddleware } from '../middleware/apiKey.middleware';
+
 
 const router = Router();
 
@@ -12,42 +12,6 @@ const router = Router();
  *   description: Admin-only endpoints for managing the platform
  */
 
-/**
- * @swagger
- * /admin/login:
- *   post:
- *     summary: Log in an admin user
- *     tags: [Admin]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *               - password
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *               password:
- *                 type: string
- *                 format: password
- *     responses:
- *       '200':
- *         description: Admin logged in successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 accessToken:
- *                   type: string
- *       '401':
- *         description: Invalid credentials
- */
-router.post('/login', AdminController.login);
 
 /**
  * @swagger
@@ -66,7 +30,7 @@ router.post('/login', AdminController.login);
  *       '403':
  *         description: Forbidden
  */
-router.get('/dashboard', apiKeyMiddleware, adminMiddleware, AdminController.getDashboardStats);
+router.get('/dashboard', adminMiddleware, AdminController.getDashboardStats);
 
 /**
  * @swagger
@@ -85,7 +49,25 @@ router.get('/dashboard', apiKeyMiddleware, adminMiddleware, AdminController.getD
  *       '403':
  *         description: Forbidden
  */
-router.get('/groups/pending', apiKeyMiddleware, adminMiddleware, AdminController.getPendingGroups);
+router.get('/groups/pending', adminMiddleware, AdminController.getPendingGroups);
+
+/**
+ * @swagger
+ * /admin/groups/active:
+ *   get:
+ *     summary: Get all active subscription groups
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Active groups retrieved successfully
+ *       '401':
+ *         description: Unauthorized
+ *       '403':
+ *         description: Forbidden
+ */
+router.get('/groups/active', adminMiddleware, AdminController.getActiveGroups);
 
 /**
  * @swagger
@@ -95,7 +77,6 @@ router.get('/groups/pending', apiKeyMiddleware, adminMiddleware, AdminController
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
- *       - apiKey: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -112,7 +93,7 @@ router.get('/groups/pending', apiKeyMiddleware, adminMiddleware, AdminController
  *       '404':
  *         description: Group not found
  */
-router.put('/groups/:id/approve', apiKeyMiddleware, adminMiddleware, AdminController.approveGroup);
+router.put('/groups/:id/approve', adminMiddleware, AdminController.approveGroup);
 
 /**
  * @swagger
@@ -122,7 +103,6 @@ router.put('/groups/:id/approve', apiKeyMiddleware, adminMiddleware, AdminContro
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
- *       - apiKey: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -139,7 +119,7 @@ router.put('/groups/:id/approve', apiKeyMiddleware, adminMiddleware, AdminContro
  *       '404':
  *         description: Group not found
  */
-router.put('/groups/:id/reject', apiKeyMiddleware, adminMiddleware, AdminController.rejectGroup);
+router.put('/groups/:id/reject', adminMiddleware, AdminController.rejectGroup);
 
 /**
  * @swagger
@@ -149,7 +129,6 @@ router.put('/groups/:id/reject', apiKeyMiddleware, adminMiddleware, AdminControl
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
- *       - apiKey: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -166,7 +145,7 @@ router.put('/groups/:id/reject', apiKeyMiddleware, adminMiddleware, AdminControl
  *       '404':
  *         description: Group not found
  */
-router.delete('/groups/:id', apiKeyMiddleware, adminMiddleware, AdminController.deleteGroup);
+router.delete('/groups/:id', adminMiddleware, AdminController.deleteGroup);
 
 /**
  * @swagger
@@ -176,7 +155,6 @@ router.delete('/groups/:id', apiKeyMiddleware, adminMiddleware, AdminController.
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
- *       - apiKey: []
  *     responses:
  *       '200':
  *         description: Users retrieved successfully
@@ -185,7 +163,33 @@ router.delete('/groups/:id', apiKeyMiddleware, adminMiddleware, AdminController.
  *       '403':
  *         description: Forbidden
  */
-router.get('/users', apiKeyMiddleware, adminMiddleware, AdminController.getUsers);
+router.get('/users', adminMiddleware, AdminController.getUsers);
+
+/**
+ * @swagger
+ * /admin/users/{id}:
+ *   get:
+ *     summary: Get user details
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: User details retrieved successfully
+ *       '401':
+ *         description: Unauthorized
+ *       '403':
+ *         description: Forbidden
+ *       '404':
+ *         description: User not found
+ */
+router.get('/users/:id', adminMiddleware, AdminController.getUserDetails);
 
 /**
  * @swagger
@@ -212,7 +216,7 @@ router.get('/users', apiKeyMiddleware, adminMiddleware, AdminController.getUsers
  *       '404':
  *         description: User not found
  */
-router.put('/users/:id/suspend', apiKeyMiddleware, adminMiddleware, AdminController.suspendUser);
+router.put('/users/:id/suspend', adminMiddleware, AdminController.suspendUser);
 
 /**
  * @swagger
@@ -231,7 +235,7 @@ router.put('/users/:id/suspend', apiKeyMiddleware, adminMiddleware, AdminControl
  *       '403':
  *         description: Forbidden
  */
-router.get('/transactions', apiKeyMiddleware, adminMiddleware, AdminController.getTransactions);
+router.get('/transactions', adminMiddleware, AdminController.getTransactions);
 
 /**
  * @swagger
@@ -250,7 +254,7 @@ router.get('/transactions', apiKeyMiddleware, adminMiddleware, AdminController.g
  *       '403':
  *         description: Forbidden
  */
-router.get('/withdrawal-requests', apiKeyMiddleware, adminMiddleware, AdminController.getWithdrawalRequests);
+router.get('/withdrawal-requests', adminMiddleware, AdminController.getWithdrawalRequests);
 
 /**
  * @swagger
@@ -277,7 +281,7 @@ router.get('/withdrawal-requests', apiKeyMiddleware, adminMiddleware, AdminContr
  *       '404':
  *         description: Withdrawal request not found
  */
-router.put('/withdrawal/:id/process', apiKeyMiddleware, adminMiddleware, AdminController.processWithdrawal);
+router.put('/withdrawal/:id/process', adminMiddleware, AdminController.processWithdrawal);
 
 /**
  * @swagger
@@ -296,6 +300,6 @@ router.put('/withdrawal/:id/process', apiKeyMiddleware, adminMiddleware, AdminCo
  *       '403':
  *         description: Forbidden
  */
-router.get('/reports', apiKeyMiddleware, adminMiddleware, AdminController.generateReport);
+router.get('/reports', adminMiddleware, AdminController.generateReport);
 
 export default router;

@@ -63,7 +63,7 @@ const apiRequest = async (
           const { accessToken } = await refreshResponse.json();
           setAuthTokens(accessToken, refreshTokenValue);
           headers['Authorization'] = `Bearer ${accessToken}`;
-          
+
           // Retry original request
           return fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
@@ -84,7 +84,7 @@ const apiRequest = async (
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'An error occurred' }));
-    
+
     // Handle validation errors from express-validator
     if (error.errors && Array.isArray(error.errors)) {
       const errorMessages = error.errors.map((err: any) => {
@@ -93,7 +93,7 @@ const apiRequest = async (
       }).join(', ');
       throw new Error(errorMessages || 'Validation failed');
     }
-    
+
     throw new Error(error.message || `HTTP error! status: ${response.status}`);
   }
 
@@ -104,7 +104,7 @@ const apiRequest = async (
 const mapGroupToFrontend = (group: any): SubscriptionGroup => {
   // Owner name might be encrypted, but backend should decrypt it in controller
   const ownerName = group.owner?.name || 'Unknown';
-  
+
   return {
     id: group.id,
     name: group.name,
@@ -126,7 +126,7 @@ const mapGroupToFrontend = (group: any): SubscriptionGroup => {
 // Map backend membership to frontend MySubscription format
 const mapMembershipToMySubscription = async (membership: any): Promise<MySubscription> => {
   const group = membership.group;
-  
+
   // Fetch credentials if available (only for members)
   let credentials = undefined;
   try {
@@ -134,8 +134,8 @@ const mapMembershipToMySubscription = async (membership: any): Promise<MySubscri
     if (credResponse.ok) {
       const credData = await credResponse.json();
       // Credentials are returned as decrypted string, parse if needed
-      const creds = typeof credData.credentials === 'string' 
-        ? JSON.parse(credData.credentials) 
+      const creds = typeof credData.credentials === 'string'
+        ? JSON.parse(credData.credentials)
         : credData.credentials;
       credentials = {
         username: creds.username || '',
@@ -146,7 +146,7 @@ const mapMembershipToMySubscription = async (membership: any): Promise<MySubscri
     // Credentials not available or access denied
     console.log('Could not fetch credentials:', error);
   }
-  
+
   return {
     ...mapGroupToFrontend(group),
     membershipType: 'monthly',
@@ -206,6 +206,7 @@ const mapUserToFrontend = (user: any): User => {
     avatarUrl: user.avatar || `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.name || user.email}`,
     memberSince: user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
     creditBalance: user.creditBalance || 0,
+    isAdmin: user.isAdmin || false,
   };
 };
 
@@ -234,7 +235,7 @@ export const register = async (name: string, email: string, password: string): P
 
   if (!response.ok) {
     const error = await response.json();
-    
+
     // Handle validation errors from express-validator
     if (error.errors && Array.isArray(error.errors)) {
       const errorMessages = error.errors.map((err: any) => {
@@ -243,7 +244,7 @@ export const register = async (name: string, email: string, password: string): P
       }).join(', ');
       throw new Error(errorMessages || 'Validation failed');
     }
-    
+
     throw new Error(error.message || 'Registration failed');
   }
 
@@ -282,12 +283,12 @@ export const verifyEmail = async (token: string): Promise<void> => {
 export const fetchCredentials = async (groupId: string): Promise<{ username: string; password?: string }> => {
   const response = await apiRequest(`/credentials/${groupId}`);
   const data = await response.json();
-  
+
   // Credentials are returned as decrypted string, parse if needed
-  const creds = typeof data.credentials === 'string' 
-    ? JSON.parse(data.credentials) 
+  const creds = typeof data.credentials === 'string'
+    ? JSON.parse(data.credentials)
     : data.credentials;
-    
+
   return {
     username: creds.username || '',
     password: creds.password,
@@ -362,11 +363,11 @@ export const addCredits = async (amount: number): Promise<void> => {
   });
 
   const order = await response.json();
-  
+
   // In a real implementation, you would redirect to Razorpay payment page
   // For now, we'll just log the order
   console.log('Payment order created:', order);
-  
+
   // TODO: Integrate Razorpay checkout
   throw new Error('Payment integration not yet complete. Please contact support.');
 };
@@ -377,12 +378,12 @@ export const createGroup = async (groupData: Omit<SubscriptionGroup, 'id' | 'pos
   formData.append('serviceType', groupData.icon); // Using icon as serviceType
   formData.append('totalPrice', groupData.totalPrice.toString());
   formData.append('slotsTotal', groupData.slotsTotal.toString());
-  
+
   // Add credentials as JSON string
   if (groupData.credentials) {
     formData.append('credentials', JSON.stringify(groupData.credentials));
   }
-  
+
   // Handle proof - send URL as a separate field, backend will handle it
   if (groupData.proof) {
     // Send proof URL as a form field (not as file)
@@ -411,13 +412,13 @@ export const createGroup = async (groupData: Omit<SubscriptionGroup, 'id' | 'pos
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Failed to create group' }));
-    
+
     // Handle validation errors
     if (error.errors && Array.isArray(error.errors)) {
       const errorMessages = error.errors.map((err: any) => err.message || err.msg || 'Validation error').join(', ');
       throw new Error(errorMessages || 'Validation failed');
     }
-    
+
     throw new Error(error.message || 'Failed to create group');
   }
 
@@ -440,21 +441,21 @@ export const forgotPassword = async (email: string): Promise<void> => {
 };
 
 export const verifyPasswordOtp = async (email: string, otp: string): Promise<{ resetToken: string }> => {
-    const response = await apiRequest('/auth/verify-password-otp', {
-        method: 'POST',
-        body: JSON.stringify({ email, otp }),
-    });
-    return await response.json();
+  const response = await apiRequest('/auth/verify-password-otp', {
+    method: 'POST',
+    body: JSON.stringify({ email, otp }),
+  });
+  return await response.json();
 };
 
 export const resetPassword = async (resetToken: string, newPassword: string): Promise<void> => {
-    await apiRequest('/auth/reset-password', {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${resetToken}`,
-        },
-        body: JSON.stringify({ password: newPassword }),
-    });
+  await apiRequest('/auth/reset-password', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${resetToken}`,
+    },
+    body: JSON.stringify({ password: newPassword }),
+  });
 };
 
 export const updateProfilePicture = async (imageDataUrl: string): Promise<void> => {
@@ -474,3 +475,72 @@ export const updateProfilePicture = async (imageDataUrl: string): Promise<void> 
     credentials: 'include',
   });
 };
+
+// --- Admin API ---
+
+// Admin now uses the same token as regular users
+const getAdminToken = (): string | null => {
+  return localStorage.getItem('accessToken');
+};
+
+const adminApiRequest = async (endpoint: string, options: RequestInit = {}): Promise<Response> => {
+  // Use the standard apiRequest which handles token refresh and headers
+  return apiRequest(endpoint, options);
+};
+
+// Deprecated: Use login() instead
+export const adminLogin = async (email: string, password: string): Promise<{ token: string, user: User }> => {
+  return login(email, password);
+};
+
+export const getAdminDashboardStats = async (): Promise<any> => {
+  const response = await adminApiRequest('/admin/dashboard');
+  return await response.json();
+};
+
+export const getPendingGroups = async (): Promise<any[]> => {
+  const response = await adminApiRequest('/admin/groups/pending');
+  return await response.json();
+};
+
+export const approveGroup = async (groupId: string): Promise<void> => {
+  await adminApiRequest(`/admin/groups/${groupId}/approve`, { method: 'PUT' });
+};
+
+export const rejectGroup = async (groupId: string): Promise<void> => {
+  await adminApiRequest(`/admin/groups/${groupId}/reject`, { method: 'PUT' });
+};
+
+export const getActiveGroups = async (): Promise<any[]> => {
+  const response = await adminApiRequest('/admin/groups/active');
+  return await response.json();
+};
+
+export const getUsers = async (): Promise<any[]> => {
+  const response = await adminApiRequest('/admin/users');
+  return await response.json();
+};
+
+export const getAdminUserDetails = async (userId: string): Promise<any> => {
+  const response = await adminApiRequest(`/admin/users/${userId}`);
+  return await response.json();
+};
+
+export const suspendUser = async (userId: string): Promise<void> => {
+  await adminApiRequest(`/admin/users/${userId}/suspend`, { method: 'PUT' });
+};
+
+export const getTransactions = async (): Promise<any[]> => {
+  const response = await adminApiRequest('/admin/transactions');
+  return await response.json();
+};
+
+export const getWithdrawalRequests = async (): Promise<any[]> => {
+  const response = await adminApiRequest('/admin/withdrawal-requests');
+  return await response.json();
+};
+
+export const processWithdrawal = async (requestId: string): Promise<void> => {
+  await adminApiRequest(`/admin/withdrawal/${requestId}/process`, { method: 'PUT' });
+};
+

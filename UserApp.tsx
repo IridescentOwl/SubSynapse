@@ -1,0 +1,252 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { AuroraBackground } from './components/ui/aurora-background';
+import Header from './components/Header';
+import HomePage from './HomePage';
+import DashboardPage from './DashboardPage';
+import ProfilePage from './ProfilePage';
+import ManageSubscriptionModal from './components/ManageSubscriptionModal';
+import CreateGroupModal from './components/CreateGroupModal';
+import JoinGroupModal from './components/JoinGroupModal';
+import AddCreditsModal from './components/AddCreditsModal';
+import AuthModal from './components/AuthModal';
+import WithdrawCreditsModal from './components/WithdrawCreditsModal';
+import type { MySubscription, SubscriptionGroup } from './types';
+import { useAuth } from './AuthContext';
+
+export type Page = 'home' | 'dashboard' | 'profile';
+export type DashboardTab = 'explore' | 'dashboard';
+
+const UserApp: React.FC = () => {
+    const [page, setPage] = useState<Page>('home');
+    const [activeDashboardTab, setActiveDashboardTab] = useState<DashboardTab>('explore');
+    const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+    const [isReady, setIsReady] = useState(false);
+
+    const { user, mySubscriptions, isAuthenticated, addCredits, joinGroup, leaveGroup, createGroup, requestWithdrawal, syncUserData, changePassword, updateProfilePicture, logout } = useAuth();
+
+    // Modal States
+    const [isManageModalOpen, setManageModalOpen] = useState(false);
+    const [isCreateGroupModalOpen, setCreateGroupModalOpen] = useState(false);
+    const [isJoinGroupModalOpen, setJoinGroupModalOpen] = useState(false);
+    const [isAddCreditsModalOpen, setAddCreditsModalOpen] = useState(false);
+    const [isAuthModalOpen, setAuthModalOpen] = useState(false);
+    const [isWithdrawModalOpen, setWithdrawModalOpen] = useState(false);
+    const [groupToJoin, setGroupToJoin] = useState<SubscriptionGroup | null>(null);
+    const [selectedSubscription, setSelectedSubscription] = useState<MySubscription | null>(null);
+
+    const lastScrollY = useRef(0);
+
+    useEffect(() => {
+        // Start content animations immediately after mount
+        const timer = setTimeout(() => setIsReady(true), 100);
+        return () => clearTimeout(timer);
+    }, []);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            if (isReady) {
+                if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+                    setIsHeaderVisible(false);
+                } else {
+                    setIsHeaderVisible(true);
+                }
+            }
+            lastScrollY.current = currentScrollY;
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [isReady]);
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            setAuthModalOpen(false);
+            if (page === 'home') {
+                setPage('dashboard');
+            }
+        } else {
+            setPage('home');
+        }
+    }, [isAuthenticated, page]);
+
+    const handleLogout = () => {
+        logout();
+        setPage('home');
+        window.scrollTo(0, 0);
+    };
+
+    const handleNavigate = (newPage: Page, tab: DashboardTab = 'explore') => {
+        if ((newPage === 'dashboard' || newPage === 'profile') && !isAuthenticated) {
+            setAuthModalOpen(true);
+            return;
+        }
+
+        setPage(newPage);
+        if (newPage === 'dashboard') {
+            setActiveDashboardTab(tab);
+        }
+        window.scrollTo(0, 0);
+    };
+
+    const handleOpenManageModal = (subscription: MySubscription) => {
+        setSelectedSubscription(subscription);
+        setManageModalOpen(true);
+    };
+
+    const handleOpenJoinModal = (group: SubscriptionGroup) => {
+        if (!isAuthenticated) {
+            setAuthModalOpen(true);
+            return;
+        }
+        setGroupToJoin(group);
+        setJoinGroupModalOpen(true);
+    };
+
+    const handleJoinGroup = async (subscription: MySubscription, cost: number) => {
+        await joinGroup(subscription, cost);
+    };
+
+    const handleCloseJoinModalAndSync = () => {
+        setJoinGroupModalOpen(false);
+        syncUserData();
+    }
+
+    const handleLeaveGroup = async (subscriptionId: string, refund: number = 0) => {
+        await leaveGroup(subscriptionId, refund);
+        setManageModalOpen(false);
+    };
+
+    const handleAddCredits = async (amount: number) => {
+        await addCredits(amount);
+        setAddCreditsModalOpen(false);
+    };
+
+    const handleRequestWithdrawal = async (amount: number, upiId: string) => {
+        await requestWithdrawal(amount, upiId);
+        setWithdrawModalOpen(false);
+    };
+
+    const handleCreateGroup = async (groupData: Omit<SubscriptionGroup, 'id' | 'postedBy' | 'slotsFilled'>) => {
+        try {
+            await createGroup(groupData);
+            setCreateGroupModalOpen(false);
+            // Refresh user data and navigate to explore tab to see the new group
+            await syncUserData();
+            handleNavigate('dashboard', 'explore');
+        } catch (error) {
+            // Error is handled in CreateGroupModal
+            throw error;
+        }
+    };
+
+    const handleOpenCreateGroupModal = () => {
+        if (!isAuthenticated) {
+            setAuthModalOpen(true);
+            return;
+        }
+        setCreateGroupModalOpen(true);
+    };
+
+    const renderPage = () => {
+        const currentPage = isAuthenticated ? page : 'home';
+        switch (currentPage) {
+            case 'dashboard':
+                return <DashboardPage
+                    activeTab={activeDashboardTab}
+                    setActiveTab={setActiveDashboardTab}
+                    mySubscriptions={mySubscriptions || []}
+                    onManageSubscription={handleOpenManageModal}
+                    onJoinGroup={handleOpenJoinModal}
+                />;
+            case 'profile':
+                return user ? <ProfilePage
+                    user={user}
+                    onAddCredits={() => setAddCreditsModalOpen(true)}
+                    onWithdrawCredits={() => setWithdrawModalOpen(true)}
+                    onChangePassword={changePassword}
+                    onUpdateProfilePicture={updateProfilePicture}
+                    onLogout={handleLogout}
+                /> : null;
+            case 'home':
+            default:
+                return <HomePage onLogin={() => setAuthModalOpen(true)} isReady={isReady} />;
+        }
+    };
+
+    return (
+        <AuroraBackground>
+            <Header
+                isVisible={isHeaderVisible}
+                page={isAuthenticated ? page : 'home'}
+                user={user}
+                activeDashboardTab={activeDashboardTab}
+                onNavigate={handleNavigate}
+                onLogin={() => setAuthModalOpen(true)}
+                onLogout={handleLogout}
+                onCreateGroup={handleOpenCreateGroupModal}
+                onAddCredits={() => setAddCreditsModalOpen(true)}
+            />
+            {renderPage()}
+            {selectedSubscription && (
+                <ManageSubscriptionModal
+                    isOpen={isManageModalOpen}
+                    onClose={() => setManageModalOpen(false)}
+                    subscription={selectedSubscription}
+                    onLeaveGroup={handleLeaveGroup}
+                />
+            )}
+            {groupToJoin && user && (
+                <JoinGroupModal
+                    isOpen={isJoinGroupModalOpen}
+                    onClose={handleCloseJoinModalAndSync}
+                    group={groupToJoin}
+                    userCredits={user.creditBalance}
+                    onConfirmJoin={handleJoinGroup}
+                    onAddCredits={() => setAddCreditsModalOpen(true)}
+                />
+            )}
+            <CreateGroupModal
+                isOpen={isCreateGroupModalOpen}
+                onClose={() => setCreateGroupModalOpen(false)}
+                onCreateGroup={handleCreateGroup}
+            />
+            <AddCreditsModal
+                isOpen={isAddCreditsModalOpen}
+                onClose={() => setAddCreditsModalOpen(false)}
+                onAddCredits={handleAddCredits}
+            />
+            {user && (
+                <WithdrawCreditsModal
+                    isOpen={isWithdrawModalOpen}
+                    onClose={() => setWithdrawModalOpen(false)}
+                    userBalance={user.creditBalance}
+                    onConfirmWithdrawal={handleRequestWithdrawal}
+                />
+            )}
+            <AuthModal
+                isOpen={isAuthModalOpen}
+                onClose={() => setAuthModalOpen(false)}
+            />
+            <footer style={{
+                textAlign: 'center',
+                padding: '2rem 1rem',
+                fontSize: '0.875rem',
+                color: 'rgba(255, 255, 255, 0.5)',
+                position: 'relative',
+                zIndex: 10
+            }}>
+                <p>&copy; {new Date().getFullYear()} Synapse. All rights reserved.</p>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '0.5rem' }}>
+                    <a href="/api/static/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Terms of Service</a>
+                    <a href="/api/static/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy Policy</a>
+                    <a href="/api/static/refund" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Refund Policy</a>
+                </div>
+                <div style={{ marginTop: '1rem' }}>
+                    <p>Contact Us: <a href="tel:9316102594" style={{ color: 'inherit', textDecoration: 'none' }}>+91 9316102594</a> or <a href="mailto:subsynapsecampus@gmail.com" style={{ color: 'inherit', textDecoration: 'none' }}>subsynapsecampus@gmail.com</a></p>
+                </div>
+            </footer>
+        </AuroraBackground>
+    );
+}
+
+export default UserApp;
